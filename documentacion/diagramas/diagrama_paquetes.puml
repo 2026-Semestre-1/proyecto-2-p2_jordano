@@ -1,0 +1,250 @@
+@startuml diagrama_paquetes
+skinparam dpi 220
+
+' ================================================================
+' SIMULADOR DE GESTIÓN DE PROCESOS — Mini PC
+' Diagrama de Paquetes completo con dependencias
+' ================================================================
+
+skinparam backgroundColor #FAFAFA
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+
+skinparam package {
+    BackgroundColor #EEF2FF
+    BorderColor #3F51B5
+    FontColor #1A237E
+    FontStyle Bold
+    FontSize 12
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #5C6BC0
+    FontColor #283593
+    FontSize 10
+}
+
+skinparam arrow {
+    Color #5C6BC0
+    FontColor #283593
+    FontSize 9
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontColor #333333
+    FontSize 9
+}
+
+title "Diagrama de Paquetes\nSimulador de Gestión de Procesos — Mini PC"
+
+' ================================================================
+' CAPA DE ENTRADA (PUNTO DE ARRANQUE)
+' ================================================================
+package "simuladorminipc\n«punto de entrada JVM»" as raiz #FFFDE7 {
+    [MainFrame\npublic static main()]
+}
+
+' ================================================================
+' CAPA DE PRESENTACIÓN (JavaFX)
+' ================================================================
+package "simuladorminipc.fx\n«capa de presentación»" as fx #E8EAF6 {
+    [SimuladorApp\nVentana 1440×860 px\nJavaFX Scene Graph]
+    [SimuladorController\nControlador MVP\nimplements KernelEventListener]
+}
+
+' ================================================================
+' CAPA NUCLEO DEL SO
+' ================================================================
+package "simuladorminipc.kernel\n«núcleo orquestador — Fachada»" as kernel #BBDEFB {
+    [Kernel\nPipeline de 10 etapas por tick\nbooted / halted / waitingForKeyboard]
+    [KernelEventListener\n«interface Observer»\n7 callbacks de eventos]
+}
+
+' ================================================================
+' CAPA DE ANÁLISIS DE ENTRADA
+' ================================================================
+package "simuladorminipc.assembler\n«analizador léxico/sintáctico»" as assembler #E8F5E9 {
+    [Assembler\nParser estático\nLímite configurable\n(assembler-config.json)]
+    [Instruction\nObjeto de valor inmutable]
+    [InstructionType\nEnum — 19 tipos + pesos]
+}
+
+' ================================================================
+' CAPA DE MODELO (ENTIDADES DEL SO)
+' ================================================================
+package "simuladorminipc.model\n«entidades del sistema operativo»" as model #FFF8E1 {
+    [PCB\nBloque de Control de Proceso\nAtomic PID generator]
+    [RegisterSet\nRegistros CPU + Pila (cap=5)]
+    [ProcessState\nEnum — 7 estados con displayName]
+    [IORequest\nSolicitud E/S con countdown]
+}
+
+' ================================================================
+' CAPA DE CICLO DE VIDA DE PROCESOS
+' ================================================================
+package "simuladorminipc.process\n«ciclo de vida de procesos»" as process #F1F8E9 {
+    [ProcessManager\nAdmisión — MAX_CONCURRENT=5]
+    [QueueManager\n5 colas: NEW READY BLOCKED\nSUSPENDED TERMINATED]
+    [StateManager\nTransiciones legales con validación]
+}
+
+' ================================================================
+' CAPA DE PLANIFICACIÓN
+' ================================================================
+package "simuladorminipc.scheduler\n«algoritmos de planificación — Strategy»" as scheduler #FDE0DC {
+    [SchedulingPolicyManager\nGestor de política activa]
+    [FCFSScheduler\nPrimero en llegar]
+    [RoundRobinScheduler\nQuantum configurable]
+    [SPNScheduler\nRáfaga más corta]
+    [SRTScheduler\nTiempo restante mínimo\napropiativo]
+    [HRRNScheduler\nMayor ratio respuesta]
+    [PriorityScheduler\nMenor número = mayor prioridad]
+}
+
+' ================================================================
+' CAPA DE CPU
+' ================================================================
+package "simuladorminipc.cpu\n«unidad de procesamiento»" as cpu #FFF3E0 {
+    [CPU\nFetch-Decode-Execute\ncycleCountdown por peso]
+    [Dispatcher\nCambios de contexto formales\ncontextSwitches counter]
+    [CycleEvent\nObjeto de valor inmutable\n7 fábricas estáticas]
+    [CycleResult\nEnum — 7 resultados posibles]
+}
+
+' ================================================================
+' CAPA DE RELOJ
+' ================================================================
+package "simuladorminipc.clock\n«referencia temporal global»" as clock #E0F7FA {
+    [SystemClock\nContador monotónico long\ntick() / reset() / getCurrent()]
+}
+
+' ================================================================
+' CAPA DE MEMORIA
+' ================================================================
+package "simuladorminipc.memory\n«jerarquía de memoria»" as memory #E0F2F1 {
+    [MemoryManager\nAsignador primer ajuste (first-fit)]
+    [RAM\nArreglo String array\nOS_RESERVED = 20 celdas]
+    [MemoryBlock\nDescriptor: base, size, pid, free]
+    [MemoryConfig\nLectura de memory-config.json\nFallback a valores por defecto]
+    [VirtualMemoryManager\nTraducción: base + offset]
+    [SwapManager\nPlaceholder — no implementado]
+}
+
+' ================================================================
+' CAPA DE E/S
+' ================================================================
+package "simuladorminipc.io\n«gestión de entrada/salida»" as io #F3E5F5 {
+    [IOManager\n3 dispositivos + waitingProcesses Map\nsubmit / complete / tick]
+    [Device\nTECLADO(3) PANTALLA(1) DISCO(5)\nlatencia en ticks]
+}
+
+' ================================================================
+' CAPA DE INTERRUPCIONES
+' ================================================================
+package "simuladorminipc.interrupt\n«sistema de interrupciones»" as interrupt #FCE4EC {
+    [InterruptManager\nCola FIFO: ArrayDeque\nraise / poll / peek / clear]
+    [Interrupt\nObjeto de valor inmutable\ntipo + PCB fuente + payload]
+    [InterruptType\nEnum — 9 tipos de interrupción]
+}
+
+' ================================================================
+' CAPA DE ALMACENAMIENTO
+' ================================================================
+package "simuladorminipc.storage\n«disco secundario simulado»" as storage #EDE7F6 {
+    [Disk\nSistema de archivos flat\nDirectorio Map<String,DiskFile>]
+    [DiskFile\nDescriptor: nombre, dirección, tamaño, contenido]
+}
+
+' ================================================================
+' CAPA DE ESTADÍSTICAS
+' ================================================================
+package "simuladorminipc.stats\n«métricas de rendimiento»" as stats #F9FBE7 {
+    [StatisticsManager\nUtilización CPU / Throughput\nTiempos promedio]
+    [ProcessStats\nInstantánea inmutable por proceso]
+}
+
+' ================================================================
+' RELACIONES ENTRE PAQUETES
+' ================================================================
+
+' --- Capa de entrada ---
+raiz ..> fx           : "«inicia»\nJavaFX runtime"
+
+' --- Capa de presentación ---
+fx  ..> kernel        : "«crea y controla»\nposee instancia de Kernel"
+fx  ..> assembler     : "«parsea»\narchivos .asm en loadFiles()"
+fx  ..> model         : "«crea»\nPCBs tras el parse"
+
+' --- Kernel hacia subsistemas (composición) ---
+kernel ..> clock      : "«posee»\nreloj global"
+kernel ..> cpu        : "«posee»\nejecutaCiclo()"
+kernel ..> process    : "«posee»\nciclo de vida"
+kernel ..> scheduler  : "«posee»\nselección de proceso"
+kernel ..> memory     : "«posee»\nasignación de RAM"
+kernel ..> io         : "«posee»\ngestión de E/S"
+kernel ..> interrupt  : "«posee»\ncola de interrupciones"
+kernel ..> storage    : "«posee»\noperaciones de disco"
+kernel ..> stats      : "«posee»\nmétric recolección"
+
+' --- CPU hacia subsistemas ---
+cpu ..> model         : "«lee/escribe»\nPCB y RegisterSet"
+cpu ..> storage       : "«accede»\nen INT 21H"
+cpu ..> memory        : "«valida»\naccesos virtuales"
+
+' --- Process hacia model y memory ---
+process ..> model     : "«gestiona»\nPCBs en colas"
+process ..> memory    : "«asigna/libera»\nbloques de RAM"
+
+' --- Scheduler hacia model ---
+scheduler ..> model   : "«consulta»\narrivalTime, burstTime\nremainingTime, priority"
+
+' --- IO hacia model ---
+io ..> model          : "«desbloquea»\nPCBs al completar E/S"
+
+' --- Interrupt hacia model ---
+interrupt ..> model   : "«referencia»\nPCB fuente de la interrupción"
+
+' --- Stats hacia cpu ---
+stats ..> cpu         : "«consulta»\ncambios de contexto\nvía Dispatcher"
+
+' --- Assembler hacia model ---
+assembler ..> model   : "«produce»\nList<Instruction> para PCB"
+
+' ================================================================
+' NOTAS EXPLICATIVAS
+' ================================================================
+note as N1
+  <b>Patrón Arquitectónico Principal: MVC</b>
+  Vista: simuladorminipc.fx
+  Controlador: SimuladorController
+  Modelo: Kernel + todos los subsistemas
+end note
+
+note as N2
+  <b>Patrón Strategy aplicado al planificador</b>
+  6 implementaciones de SchedulingAlgorithm
+  Intercambiables en tiempo de ejecución
+  sin modificar el Kernel
+end note
+
+note as N3
+  <b>Patrón Observer</b>
+  KernelEventListener desacopla
+  el Kernel de la interfaz gráfica
+  7 callbacks: onTickCompleted,
+  onProcessStateChanged, onScreenOutput,
+  onKeyboardInputRequired, onFileOperation,
+  onExecutionError, onAllFinished
+end note
+
+note as N4
+  <b>Configuración de Hardware (memory-config.json)</b>
+  ramSize = 700 celdas
+  diskSize = 1080 celdas
+  virtualMemorySize = 80 palabras/proceso
+end note
+
+@enduml

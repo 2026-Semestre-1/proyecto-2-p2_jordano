@@ -1,0 +1,588 @@
+@startuml diagrama_secuencia_ejecucion
+skinparam dpi 220
+
+' ================================================================
+' SIMULADOR DE GESTIÓN DE PROCESOS — Mini PC
+' Diagrama de Secuencia: Flujo completo de ejecución en tiempo de ejecución
+' Cubre: carga ASM → parse → validación → memoria →
+'        ciclo CPU → interrupciones → finalización
+' ================================================================
+
+skinparam backgroundColor #FAFAFA
+skinparam sequenceArrowColor #3F51B5
+skinparam sequenceArrowFontColor #283593
+skinparam sequenceArrowFontSize 10
+
+skinparam participant {
+    BackgroundColor #EEF2FF
+    BorderColor #3F51B5
+    FontColor #1A237E
+    FontStyle Bold
+    FontSize 10
+}
+
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #388E3C
+    FontColor #1B5E20
+}
+
+skinparam lifeline {
+    Strategy solid
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontSize 9
+}
+
+skinparam sequence {
+    GroupBackgroundColor #E3F2FD
+    GroupBorderColor #1976D2
+    GroupFontColor #0D47A1
+    DividerBackgroundColor #F3E5F5
+    DividerBorderColor #7B1FA2
+    DividerFontColor #4A148C
+    BoxBackgroundColor #FFF3E0
+    BoxBorderColor #E65100
+    ReferenceBorderColor #1565C0
+}
+
+title "Diagrama de Secuencia — Flujo Completo de Ejecución\nSimulador de Gestión de Procesos — Mini PC"
+
+autonumber
+
+actor       "Usuario"             as U
+participant "SimuladorController" as CTRL
+participant "Assembler"           as ASM
+participant "Kernel"              as KRN
+participant "ProcessManager"      as PM
+participant "QueueManager"        as QM
+participant "MemoryManager"       as MM
+participant "SchedulingPolicy\nManager" as SCHED
+participant "Dispatcher"          as DISP
+participant "CPU"                 as CPU
+participant "IOManager"           as IOM
+participant "InterruptManager"    as INTM
+participant "StatisticsManager"   as STAT
+participant "StateManager"        as SM
+participant "Disk"                as DISK
+
+' ================================================================
+' SECCIÓN 1: CARGA Y ANÁLISIS DEL ARCHIVO ASM
+' ================================================================
+== Fase 1: Carga y Análisis del Archivo ASM ==
+
+U -> CTRL : Clic en «Cargar archivos»
+activate CTRL
+
+CTRL -> U : Abre selector de archivos (*.asm)
+U -> CTRL : Selecciona archivo(s) .asm
+
+loop Por cada archivo .asm seleccionado
+
+    CTRL -> ASM : parse(file)
+    activate ASM
+
+    note right of ASM
+      Valida: file != null && file.exists()
+      Máximo: configurable (assembler-config.json, por defecto 80)
+      Ignora: líneas vacías y comentarios (;)
+    end note
+
+    ASM -> ASM : Verifica existencia del archivo
+    ASM -> ASM : Lee línea por línea
+    ASM -> ASM : parseLine(línea, numLínea) [por cada instrucción]
+
+    note right of ASM
+      Tokeniza: primer token = opcode
+      Valida registros (AC AX BX CX DX AH AL)
+      Valida tipos de operandos (reg, entero, cadena)
+      Crea Instruction(type, op1, op2, peso, lineNum)
+    end note
+
+    ASM -> ASM : Verifica: instrucciones > 0
+    ASM -> ASM : Verifica: instrucciones <= 80
+
+    alt Archivo válido
+        ASM --> CTRL : List<Instruction>
+        deactivate ASM
+
+        CTRL -> CTRL : Crea PCB (pid, nombre, instrucciones,\narrivalTime=0, burstTime=Σpesos)
+
+        note right of CTRL
+          PCB.pid = AtomicInteger autoincremento
+          PCB.memoryRequired = instrucciones.size()
+          PCB.remainingTime = burstTime
+          PCB.registers = new RegisterSet() (pc=0)
+          PCB.state = NEW
+        end note
+
+        CTRL -> KRN : loadProcess(pcb)
+        activate KRN
+        KRN -> PM : submit(pcb)
+        activate PM
+        PM -> QM : admitToNew(pcb)
+        activate QM
+        QM --> PM : ok
+        deactivate QM
+        PM --> KRN : ok
+        deactivate PM
+        KRN --> CTRL : ok
+        deactivate KRN
+
+    else Archivo con error de sintaxis
+        ASM --> CTRL : Exception("[Línea N] descripción")
+        deactivate ASM
+        CTRL -> CTRL : Registra error en lista de mensajes
+        CTRL -> U : Muestra error en registro de eventos
+        note right of U
+          "[ERROR] archivo.asm: [Línea N] descripción"
+          El resto de archivos continúan cargando
+        end note
+    end
+
+end
+
+CTRL -> KRN : executeTick() [pase de admisión inmediato]
+deactivate CTRL
+
+' ================================================================
+' SECCIÓN 2: PIPELINE DE TICK — EJECUCIÓN NORMAL
+' ================================================================
+== Fase 2: Pipeline de Tick — Ciclo de Ejecución Normal ==
+
+U -> CTRL : Clic en «→ Paso» (o Auto-todos activo)
+activate CTRL
+CTRL -> KRN : executeTick()
+activate KRN
+
+note right of KRN
+  GUARDA DE ENTRADA:
+  if (!booted || halted || waitingForKeyboard != null) return
+end note
+
+' --- Etapa 1: Reloj ---
+KRN -> KRN : ① clock.tick() → tick++
+
+' --- Etapa 2: Admisión de procesos ---
+KRN -> PM : ② loadArrivingProcesses(tick)
+activate PM
+
+loop Por cada PCB en newQueue con arrivalTime <= tick
+
+    PM -> MM : allocate(pcb)
+    activate MM
+    MM -> MM : findFreeBlock(pcb.memoryRequired)
+
+    alt Hay bloque libre suficiente
+        MM -> MM : Asigna bloque: base, limit
+        MM -> MM : Escribe instrucciones en RAM[base..base+n]
+        MM --> PM : true
+        deactivate MM
+
+        PM -> SM : admitToReady(pcb)
+        activate SM
+        SM -> SM : guardTransition(pcb, NEW)
+        SM -> QM : moveToReady(pcb)
+        activate QM
+        QM --> SM : ok
+        deactivate QM
+        SM -> KRN : fireProcessStateChanged(pcb, NEW, READY)
+        SM --> PM : ok
+        deactivate SM
+
+    else RAM insuficiente
+        MM --> PM : false
+        deactivate MM
+        note right of PM
+          El proceso permanece en NEW.
+          Se reintentará en el siguiente tick.
+        end note
+    end
+end
+PM --> KRN : ok
+deactivate PM
+
+' --- Etapa 3: Avance de E/S ---
+KRN -> IOM : ③ tick()
+activate IOM
+IOM -> IOM : keyboard.tick() [latencia=3]
+IOM -> IOM : screen.tick()   [latencia=1]
+IOM -> IOM : disk.tick()     [latencia=5]
+
+loop Por cada dispositivo completado
+    IOM -> SM : unblockToReady(pcb)
+    activate SM
+    SM -> QM : moveToReady(pcb)
+    activate QM
+    QM --> SM : ok
+    deactivate QM
+    SM -> KRN : fireProcessStateChanged(pcb, BLOCKED, READY)
+    SM --> IOM : ok
+    deactivate SM
+end
+
+IOM --> KRN : List<PCB> desbloqueados
+deactivate IOM
+
+' --- Etapa 4: Planificación y despacho ---
+KRN -> SCHED : ④ selectNext(readyQueue, currentProcess)
+activate SCHED
+
+note right of SCHED
+  Algoritmo activo (uno de):
+  FCFS: menor arrivalTime
+  RR:   frente de cola si quantum=0
+  SPN:  menor burstTime
+  SRT:  menor remainingTime (apropiativo)
+  HRRN: mayor (wait+burst)/burst
+  Prioridad: menor número de prioridad
+end note
+
+SCHED --> KRN : procesoSeleccionado
+deactivate SCHED
+
+KRN -> DISP : dispatch(procesoSeleccionado, cpu)
+activate DISP
+DISP -> CPU : loadProcess(pcb)
+activate CPU
+CPU -> CPU : currentProcess = pcb
+CPU -> CPU : cycleCountdown = instruccionActual.weight
+CPU --> DISP : ok
+deactivate CPU
+DISP -> DISP : contextSwitches++
+DISP -> SM : setRunning(pcb)
+activate SM
+SM -> QM : removeFromReady(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM --> DISP : ok
+deactivate SM
+DISP --> KRN : ok
+deactivate DISP
+
+KRN -> STAT : onProcessFirstRun(pcb, tick) [solo 1ª vez]
+activate STAT
+STAT -> STAT : pcb.responseTime = tick - arrivalTime
+STAT --> KRN : ok
+deactivate STAT
+
+' --- Etapa 5: Ciclo de CPU ---
+KRN -> CPU : ⑤ executeCycle()
+activate CPU
+
+CPU -> CPU : cycleCountdown--
+
+alt cycleCountdown > 0
+    CPU --> KRN : CycleEvent.normal()
+    note right of CPU
+      Instrucción todavía en progreso.
+      Se necesitan más ticks para completarla.
+    end note
+else cycleCountdown == 0
+    CPU -> CPU : applyInstruction(instruccionActual)
+    CPU -> CPU : pc++
+    CPU -> CPU : cycleCountdown = siguienteInstruccion.weight
+    CPU --> KRN : CycleEvent (tipo según instrucción)
+end
+deactivate CPU
+
+' --- Etapa 6: Manejo del evento ---
+KRN -> KRN : ⑥ handleCycleEvent(event, proceso, tick)
+KRN -> KRN : proceso.executedTime++\nproceso.remainingTime--\nproceso.quantumRemaining--
+KRN -> KRN : Actualiza waitingTime de todos en READY
+
+' --- Etapa 7: Verificación de quantum (RR) ---
+KRN -> KRN : ⑦ if (RR && quantumRemaining <= 0)
+
+' --- Etapa 8: Estadísticas y BCP ---
+KRN -> STAT : ⑧ onTick(tick)
+activate STAT
+STAT -> STAT : totalTicks++
+STAT -> STAT : if (CPU activa) activeTicks++
+STAT --> KRN : ok
+deactivate STAT
+KRN -> MM : storeBcpInOsArea()
+activate MM
+MM -> MM : Escribe estado de procesos activos en RAM[0..19]
+MM --> KRN : ok
+deactivate MM
+
+' --- Etapa 9: Notificación a listeners ---
+KRN -> CTRL : ⑨ onTickCompleted(tick)
+activate CTRL #lightblue
+CTRL -> CTRL : Actualiza currentTickProp
+CTRL -> CTRL : Actualiza registros CPU en UI
+CTRL -> CTRL : Refresca ObservableLists de 4 tablas
+CTRL -> CTRL : Refresca mapa de RAM y disco
+CTRL -> CTRL : Refresca panel de estadísticas
+CTRL --> KRN : ok
+deactivate CTRL
+
+' --- Etapa 10: Verificación de fin ---
+KRN -> KRN : ⑩ allFinished()?
+alt Todos los procesos terminaron
+    KRN -> KRN : halted = true
+    KRN -> CTRL : onAllFinished()
+    activate CTRL #salmon
+    CTRL -> CTRL : autoTimeline.stop()
+    CTRL -> U : "[SIM] Simulación completada"
+    deactivate CTRL
+end
+
+KRN --> CTRL : ok
+deactivate KRN
+CTRL --> U : UI actualizada
+deactivate CTRL
+
+' ================================================================
+' SECCIÓN 3: INTERRUPCIÓN INT 09H — ENTRADA DE TECLADO
+' ================================================================
+== Fase 3: Interrupción INT 09H — Entrada de Teclado ==
+
+note over KRN, CPU
+  El proceso ejecuta la instrucción INT 09H.
+  CPU.applyInstruction() retorna CycleEvent.keyboardInput()
+end note
+
+KRN -> CPU : executeCycle()
+activate CPU
+CPU -> CPU : applyInstruction(INT_09H)
+CPU --> KRN : CycleEvent.keyboardInput()
+deactivate CPU
+
+KRN -> IOM : submitKeyboardRequest(pcb)
+activate IOM
+IOM -> IOM : keyboard.assign(IORequest(MAX_VALUE), pcb.pid)
+IOM -> IOM : waitingProcesses.put(pcb.pid, pcb)
+IOM --> KRN : ok
+deactivate IOM
+
+KRN -> SM : blockOnIO(pcb)
+activate SM
+SM -> QM : moveToBlocked(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM -> KRN : fireProcessStateChanged(pcb, RUNNING, BLOCKED)
+SM --> KRN : ok
+deactivate SM
+
+KRN -> CPU : releaseProcess()
+activate CPU
+CPU -> CPU : currentProcess = null
+CPU --> KRN : ok
+deactivate CPU
+
+KRN -> KRN : waitingForKeyboard = pcb
+
+KRN -> CTRL : onKeyboardInputRequired(pcb)
+activate CTRL
+CTRL -> CTRL : Muestra campo de entrada de teclado en UI
+CTRL -> CTRL : autoTimeline pausa si estaba activo
+CTRL -> U : "[KB] Proceso 'nombre' esperando\nentrada de teclado (INT 09H)"
+
+U -> CTRL : Ingresa valor numérico (0–255) y clic «Enviar»
+CTRL -> CTRL : Valida entrada numérica
+
+CTRL -> KRN : provideKeyboardInput(valor)
+activate KRN
+KRN -> IOM : completeKeyboardRequest(pcb, valor)
+activate IOM
+IOM -> IOM : pcb.registers.ax = valor
+IOM -> IOM : keyboard.release()
+IOM -> IOM : waitingProcesses.remove(pcb.pid)
+IOM --> KRN : ok
+deactivate IOM
+
+KRN -> SM : unblockToReady(pcb)
+activate SM
+SM -> QM : moveToReady(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM -> KRN : fireProcessStateChanged(pcb, BLOCKED, READY)
+SM --> KRN : ok
+deactivate SM
+
+KRN -> KRN : waitingForKeyboard = null
+KRN --> CTRL : ok
+deactivate KRN
+
+CTRL -> CTRL : Oculta campo de entrada
+CTRL -> CTRL : Reanuda autoTimeline si corresponde
+CTRL --> U : Simulación continúa
+deactivate CTRL
+
+' ================================================================
+' SECCIÓN 4: INTERRUPCIÓN INT 21H — OPERACIÓN DE ARCHIVO
+' ================================================================
+== Fase 4: Interrupción INT 21H — Operación de Archivo ==
+
+note over KRN, CPU
+  El proceso ejecuta INT 21H.
+  ah=60 (CREATE), dxString="datos.txt"
+  La CPU ejecuta la operación en el Disk de inmediato.
+end note
+
+KRN -> CPU : executeCycle()
+activate CPU
+CPU -> DISK : createFile(pcb.registers.dxString)
+activate DISK
+DISK -> DISK : Verifica duplicados en directorio
+DISK -> DISK : Crea entrada en Map<name, DiskFile>
+DISK -> DISK : nextDataAddress += 1
+DISK --> CPU : true
+deactivate DISK
+CPU --> KRN : CycleEvent.fileOperation(60, "datos.txt")
+deactivate CPU
+
+KRN -> IOM : submitFileRequest(pcb, 60, "datos.txt")
+activate IOM
+IOM -> IOM : disk.assign(IORequest(DISCO latencia=5), pcb.pid)
+IOM -> IOM : waitingProcesses.put(pcb.pid, pcb)
+IOM --> KRN : ok
+deactivate IOM
+
+KRN -> SM : blockOnIO(pcb)
+activate SM
+SM -> QM : moveToBlocked(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM --> KRN : ok
+deactivate SM
+
+KRN -> CPU : releaseProcess()
+activate CPU
+CPU --> KRN : ok
+deactivate CPU
+
+KRN -> CTRL : onFileOperation(pcb, "CREAR", "datos.txt")
+activate CTRL
+CTRL -> U : "[I/O] PID N → CREAR \"datos.txt\""
+deactivate CTRL
+
+note over IOM
+  5 ticks después: disk.tick() llega a 0
+  ioManager.tick() retorna el PCB desbloqueado
+end note
+
+IOM --> KRN : [5 ticks] List<PCB> = [pcb]
+KRN -> SM : unblockToReady(pcb)
+activate SM
+SM -> QM : moveToReady(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM -> KRN : fireProcessStateChanged(pcb, BLOCKED, READY)
+SM --> KRN : ok
+deactivate SM
+
+' ================================================================
+' SECCIÓN 5: EXPIRACIÓN DE QUANTUM (ROUND ROBIN)
+' ================================================================
+== Fase 5: Expiración de Quantum (Round Robin) ==
+
+note over KRN
+  Al final del tick ⑦:
+  política == ROUND_ROBIN &&
+  proceso.quantumRemaining <= 0
+end note
+
+KRN -> INTM : raise(QUANTUM_EXPIRED, pcb, null, 0)
+activate INTM
+INTM -> INTM : queue.add(Interrupt)
+INTM --> KRN : ok
+deactivate INTM
+
+KRN -> CPU : releaseProcess()
+activate CPU
+CPU --> KRN : ok
+deactivate CPU
+
+KRN -> SM : preemptToReady(pcb)
+activate SM
+SM -> QM : moveToReady(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM -> KRN : fireProcessStateChanged(pcb, RUNNING, READY)
+SM --> KRN : ok
+deactivate SM
+
+KRN -> KRN : pcb.quantumRemaining = roundRobinQuantum
+KRN -> CTRL : "[SCHED] Quantum expirado para 'nombre'"
+activate CTRL
+CTRL -> U : Proceso vuelve a tabla READY
+deactivate CTRL
+
+' ================================================================
+' SECCIÓN 6: FINALIZACIÓN NORMAL DE PROCESO (INT 20H)
+' ================================================================
+== Fase 6: Finalización Normal del Proceso (INT 20H) ==
+
+note over CPU
+  El proceso ejecuta INT 20H.
+  CPU.applyInstruction() retorna CycleEvent.processFinished()
+end note
+
+KRN -> CPU : executeCycle()
+activate CPU
+CPU -> CPU : applyInstruction(INT_20H)
+CPU --> KRN : CycleEvent.processFinished()
+deactivate CPU
+
+KRN -> CPU : releaseProcess()
+activate CPU
+CPU -> CPU : currentProcess = null
+CPU --> KRN : ok
+deactivate CPU
+
+KRN -> STAT : onProcessFinished(pcb, tick)
+activate STAT
+STAT -> STAT : Calcula turnaroundTime = tick - arrivalTime
+STAT -> STAT : Calcula serviceTime, turnaroundRatio
+STAT -> STAT : Crea ProcessStats inmutable
+STAT -> STAT : finishedProcesses.add(stats)
+STAT --> KRN : ok
+deactivate STAT
+
+KRN -> SM : terminate(pcb)
+activate SM
+SM -> QM : moveToTerminated(pcb)
+activate QM
+QM --> SM : ok
+deactivate QM
+SM -> KRN : fireProcessStateChanged(pcb, RUNNING, TERMINATED)
+SM --> KRN : ok
+deactivate SM
+
+KRN -> MM : free(pcb)
+activate MM
+MM -> MM : Marca bloque como libre (block.free = true)
+MM -> MM : Limpia celdas de RAM[base..limit]
+MM --> KRN : ok
+deactivate MM
+
+KRN -> CTRL : onProcessStateChanged(pcb, RUNNING, TERMINATED)
+activate CTRL
+CTRL -> CTRL : Mueve fila de ProcessRow a tabla TERMINADOS
+CTRL -> U : "[FIN] PID N 'nombre' terminó en tick T"
+deactivate CTRL
+
+KRN -> KRN : allFinished()?
+
+alt Todos los procesos terminaron
+    KRN -> KRN : halted = true
+    KRN -> CTRL : onAllFinished()
+    activate CTRL
+    CTRL -> CTRL : autoTimeline.stop()
+    CTRL -> U : "[SIM] Simulación completada.\nTodos los procesos finalizaron."
+    deactivate CTRL
+end
+
+@enduml

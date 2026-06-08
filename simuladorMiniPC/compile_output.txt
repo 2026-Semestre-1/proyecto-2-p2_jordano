@@ -1,0 +1,22 @@
+﻿javac : D:\proyecto-1-EscalanteWizard\simuladorMiniPC\src\simuladorminipc\MainF
+rame.java:575: error: implicitly declared classes are a preview feature and 
+are disabled by default.
+En línea: 1 Carácter: 1
++ javac -encoding UTF-8 -cp "d:\proyecto-1-EscalanteWizard\simuladorMin ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (D:\proyecto-1-E...led by default. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    private void refreshDiskTable() {
+            ^
+  (use --enable-preview to enable implicitly declared classes)
+D:\proyecto-1-EscalanteWizard\simuladorMiniPC\src\simuladorminipc\MainFrame.jav
+a:657: error: class, interface, enum, or record expected
+}
+^
+D:\proyecto-1-EscalanteWizard\simuladorMiniPC\src\simuladorminipc\MainFrame.jav
+a:1: error: implicitly declared class should not have package declaration
+package simuladorminipc;
+^
+3 errors
