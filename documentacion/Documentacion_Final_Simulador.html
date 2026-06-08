@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentación Final — Simulador de Gestión de Procesos Mini PC</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --bg2: #ffffff;
+      --bg3: #eaf0f7;
+      --border: #c7d3e3;
+      --accent: #0f4c81;
+      --accent2: #1e3a5f;
+      --text: #1f2d3d;
+      --text-muted: #5f6f82;
+      --green: #1f6f43;
+      --yellow: #8a6d1f;
+      --red: #8a2d2d;
+      --cyan: #1f5f7a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+    /* NAV SIDEBAR */
+    nav {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px;
+      height: 100vh;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 100;
+    }
+    nav .nav-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 16px 8px;
+    }
+    nav a {
+      display: block;
+      padding: 7px 16px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: background 0.15s, color 0.15s;
+    }
+    nav a:hover { background: #dde8f4; color: var(--accent2); }
+    nav a.section { font-weight: 600; color: var(--text); font-size: 0.9rem; margin-top: 6px; }
+    /* MAIN */
+    main {
+      margin-left: 240px;
+      max-width: 1280px;
+      padding: 48px 48px 80px;
+    }
+    /* TYPOGRAPHY */
+    h1 { font-size: 2.2rem; color: #0f2238; margin-bottom: 8px; }
+    h2 { font-size: 1.45rem; color: var(--accent2); margin: 48px 0 16px;
+         border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+    h3 { font-size: 1.1rem; color: var(--cyan); margin: 28px 0 10px; }
+    h4 { font-size: 0.95rem; color: var(--yellow); margin: 18px 0 8px; }
+    p  { margin-bottom: 14px; }
+    ul, ol { padding-left: 22px; margin-bottom: 14px; }
+    li { margin-bottom: 4px; }
+    a  { color: var(--accent2); }
+    /* SUBTITLE */
+    .subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 32px; }
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 700; margin: 2px;
+    }
+    .badge-java  { background: #1e3a5f; color: #93c5fd; }
+    .badge-fx    { background: #1f2d3d; color: #67e8f9; }
+    .badge-ant   { background: #2d1b14; color: #fb923c; }
+    .badge-java25{ background: #1a2e1a; color: #4ade80; }
+    /* PANELS / CARDS */
+    .panel {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 22px; margin: 16px 0;
+    }
+    .panel.highlight { border-color: var(--accent); }
+    /* CODE BLOCKS */
+    pre {
+      background: #f8fbff; border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 18px;
+      overflow-x: auto; margin: 14px 0;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.83rem; line-height: 1.55; color: #1f3652;
+    }
+    code {
+      background: #e8eff8; border-radius: 4px;
+      padding: 2px 6px; font-size: 0.85em;
+      color: #173a5e; font-family: 'Cascadia Code', 'Consolas', monospace;
+    }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+    /* TABLES */
+    table {
+      width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.88rem;
+    }
+    th {
+      background: var(--bg3); color: var(--accent2);
+      text-align: left; padding: 9px 12px; border-bottom: 2px solid var(--border);
+      font-weight: 600;
+    }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:hover td { background: var(--bg3); }
+    /* SECTIONS */
+    section { margin-bottom: 12px; }
+    .toc-entry { margin: 4px 0; }
+    /* DIVIDER */
+    hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+    /* ALGORITHM CARDS */
+    .algo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0; }
+    .algo-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px;
+    }
+    .algo-card h4 { margin-top: 0; }
+    .algo-card .tipo { font-size: 0.78rem; color: var(--green); font-weight: 600; margin-bottom: 6px; }
+    /* STATE MACHINE */
+    .state { display: inline-block; padding: 4px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; margin: 2px; }
+    .s-new       { background: #dce9f8; color: #1e3a5f; }
+    .s-ready     { background: #dff3e4; color: #1f6f43; }
+    .s-running   { background: #f8edd8; color: #8a6d1f; }
+    .s-blocked   { background: #f9dede; color: #8a2d2d; }
+    .s-term      { background: #e7eaee; color: #4b5563; }
+    /* PIPELINE */
+    .pipeline { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+    .step {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 12px; font-size: 0.82rem;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .step .num { background: var(--accent); color: white; border-radius: 4px; padding: 2px 6px; font-weight: 700; font-size: 0.78rem; }
+    /* PORTADA */
+    .portada {
+      text-align: center;
+      padding: 80px 40px 60px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg2);
+      margin-bottom: 48px;
+    }
+    .portada .p-inst  { font-size: 1.15rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .portada .p-prog  { font-size: 0.98rem; color: var(--text-muted); margin-bottom: 40px; }
+    .portada .p-title { font-size: 2rem; font-weight: 700; color: #0f2238; margin-bottom: 6px; }
+    .portada .p-sub   { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 44px; }
+    .portada .p-grid  {
+      display: inline-grid;
+      grid-template-columns: auto auto;
+      gap: 10px 28px;
+      text-align: left;
+      margin-bottom: 36px;
+    }
+    .portada .p-label { font-weight: 600; color: var(--text); font-size: 0.95rem; }
+    .portada .p-val   { color: var(--text-muted); font-size: 0.95rem; }
+    .portada .p-year  { font-size: 1rem; color: var(--text-muted); margin-top: 8px; letter-spacing: 0.04em; }
+    /* TABLE OF CONTENTS */
+    .toc {
+      list-style: none;
+      padding-left: 0;
+      counter-reset: toc-main;
+    }
+    .toc > li {
+      counter-increment: toc-main;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .toc > li:last-child { border-bottom: none; }
+    .toc > li > .toc-main {
+      font-weight: 600;
+      font-size: 0.98rem;
+      color: var(--accent2);
+      text-decoration: none;
+    }
+    .toc > li > .toc-main::before {
+      content: counter(toc-main) ".  ";
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      min-width: 28px;
+      display: inline-block;
+    }
+    .toc > li > .toc-main:hover { color: var(--accent); }
+    .toc-sub {
+      list-style: none;
+      padding-left: 32px;
+      margin: 2px 0 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 0;
+    }
+    .toc-sub li {
+      width: 100%;
+      font-size: 0.86rem;
+    }
+    .toc-sub li a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .toc-sub li a:hover { color: var(--accent2); text-decoration: underline; }
+    .toc-sub li::before { content: "↳  "; color: var(--border); }
+    @media print {
+      nav { display: none; }
+      main { margin-left: 0; max-width: none; padding: 20px; }
+      .portada { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR NAVIGATION -->
+<nav>
+  <div class="nav-title">Índice</div>
+  <a class="section" href="#portada">Portada</a>
+  <a class="section" href="#indice-general">Índice general</a>
+  <a class="section" href="#resumen">Descripción del proyecto</a>
+  <a href="#stack">Stack tecnológico</a>
+  <a href="#arquitectura">Arquitectura</a>
+  <a class="section" href="#paquetes">Inventario de paquetes</a>
+  <a href="#assembler-pkg">assembler</a>
+  <a href="#clock-pkg">clock</a>
+  <a href="#cpu-pkg">cpu</a>
+  <a href="#fx-pkg">fx</a>
+  <a href="#interrupt-pkg">interrupt</a>
+  <a href="#io-pkg">io</a>
+  <a href="#kernel-pkg">kernel</a>
+  <a href="#memory-pkg">memory</a>
+  <a href="#model-pkg">model</a>
+  <a href="#process-pkg">process</a>
+  <a href="#scheduler-pkg">scheduler</a>
+  <a href="#stats-pkg">stats</a>
+  <a href="#storage-pkg">storage</a>
+  <a class="section" href="#clases">Clases clave (UML)</a>
+  <a href="#pcb-class">PCB</a>
+  <a href="#kernel-class">Kernel</a>
+  <a href="#cpu-class">CPU</a>
+  <a href="#dispatcher-class">Dispatcher</a>
+  <a href="#controller-class">SimuladorController</a>
+  <a href="#javadoc-clases">Especificación de clases</a>
+  <a class="section" href="#pipeline">Pipeline de ejecución</a>
+  <a href="#tick-pipeline">Ciclo tick (10 etapas)</a>
+  <a href="#secuencia-carga">Secuencia: carga</a>
+  <a href="#secuencia-tick">Secuencia: tick</a>
+  <a class="section" href="#memoria">Gestión de memoria</a>
+  <a href="#firstfit">First-Fit</a>
+  <a href="#virtual">Memoria virtual</a>
+  <a class="section" href="#interrupciones">Interrupciones y E/S</a>
+  <a class="section" href="#errores">Manejo de errores</a>
+  <a class="section" href="#metricas">Métricas de rendimiento</a>
+  <a class="section" href="#instrucciones">Conjunto de instrucciones</a>
+  <a class="section" href="#estados">Estados del proceso</a>
+  <a class="section" href="#manual-usuario">Manual de Usuario</a>
+  <a class="section" href="#manual-tecnico">Manual Técnico</a>
+  <a class="section" href="#objetivos">Objetivos alcanzados</a>
+  <a class="section" href="#bibliografia">Bibliografía</a>
+</nav>
+
+<main>
+
+  <!-- PORTADA -->
+  <div class="portada" id="portada">
+    <p class="p-inst">Instituto Tecnológico de Costa Rica</p>
+    <p class="p-prog">Ingeniería en Computación</p>
+    <h1 class="p-title">Simulador de Gestión de Procesos</h1>
+    <p class="p-sub">Mini PC &mdash; Documentación Final</p>
+    <div class="p-grid">
+      <span class="p-label">Curso:</span>      <span class="p-val">Principios de Sistemas Operativos</span>
+      <span class="p-label">Profesor:</span>   <span class="p-val">Cristian Campos</span>
+      <span class="p-label">Estudiante:</span> <span class="p-val">Jordano Escalante</span>
+      <span class="p-label">Período:</span>    <span class="p-val">Primer Semestre</span>
+    </div>
+    <p class="p-year">2026</p>
+  </div>
+
+  <h2 id="indice-general">Índice General</h2>
+  <ol class="toc">
+    <li>
+      <a class="toc-main" href="#resumen">Descripción del Proyecto</a>
+      <ul class="toc-sub">
+        <li><a href="#stack">Stack Tecnológico</a></li>
+        <li><a href="#arquitectura">Arquitectura General</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#paquetes">Inventario de Paquetes</a>
+      <ul class="toc-sub">
+        <li><a href="#assembler-pkg">assembler</a></li>
+        <li><a href="#clock-pkg">clock</a></li>
+        <li><a href="#cpu-pkg">cpu</a></li>
+        <li><a href="#fx-pkg">fx</a></li>
+        <li><a href="#interrupt-pkg">interrupt</a></li>
+        <li><a href="#io-pkg">io</a></li>
+        <li><a href="#kernel-pkg">kernel</a></li>
+        <li><a href="#memory-pkg">memory</a></li>
+        <li><a href="#model-pkg">model</a></li>
+        <li><a href="#process-pkg">process</a></li>
+        <li><a href="#scheduler-pkg">scheduler</a></li>
+        <li><a href="#stats-pkg">stats</a></li>
+        <li><a href="#storage-pkg">storage</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#clases">Clases Clave — Diagrama UML</a>
+      <ul class="toc-sub">
+        <li><a href="#pcb-class">PCB</a></li>
+        <li><a href="#kernel-class">Kernel</a></li>
+        <li><a href="#cpu-class">CPU</a></li>
+        <li><a href="#dispatcher-class">Dispatcher</a></li>
+        <li><a href="#controller-class">SimuladorController</a></li>
+        <li><a href="#uml-clases-card">3.1 Cardinalidad de Clases</a></li>
+        <li><a href="#uml-paquetes-card">3.2 Cardinalidad de Paquetes</a></li>
+        <li><a href="#uml-paquetes-estructural">3.2.1 Vista Estructural</a></li>
+        <li><a href="#uml-paquetes-flujo">3.2.2 Flujo por Tick</a></li>
+        <li><a href="#javadoc-clases">3.3 Especificación de Clases</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#pipeline">Pipeline de Ejecución</a>
+      <ul class="toc-sub">
+        <li><a href="#tick-pipeline">4.1 Ciclo Tick (10 etapas)</a></li>
+        <li><a href="#secuencia-carga">4.2 Secuencia de Carga</a></li>
+        <li><a href="#secuencia-tick">4.3 Secuencia de Tick</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#memoria">Gestión de Memoria</a>
+      <ul class="toc-sub">
+        <li><a href="#firstfit">5.1 First-Fit</a></li>
+        <li><a href="#virtual">5.2 Memoria Virtual</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#interrupciones">Interrupciones y E/S</a>
+      <ul class="toc-sub">
+        <li><a href="#latencias-io">Latencias</a></li>
+        <li><a href="#tipos-interrupcion">Tipos de interrupción</a></li>
+        <li><a href="#flujo-disco">Flujo INT 21H</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#errores">Manejo de Errores</a>
+      <ul class="toc-sub">
+        <li><a href="#errores-parse">7.1 Errores de parse</a></li>
+        <li><a href="#errores-runtime">7.2 Errores de runtime</a></li>
+      </ul>
+    </li>
+    <li><a class="toc-main" href="#metricas">Métricas de Rendimiento</a></li>
+    <li><a class="toc-main" href="#instrucciones">Conjunto de Instrucciones ASM</a></li>
+    <li><a class="toc-main" href="#estados">Estados del Proceso</a></li>
+    <li>
+      <a class="toc-main" href="#manual-usuario">Manual de Usuario</a>
+      <ul class="toc-sub">
+        <li><a href="#mu-inicio">11.1 Inicio rápido</a></li>
+        <li><a href="#mu-flujo">11.2 Flujo operativo</a></li>
+        <li><a href="#mu-paneles">11.3 Interpretación de paneles</a></li>
+        <li><a href="#mu-incidencias">11.4 Incidencias frecuentes</a></li>
+      </ul>
+    </li>
+    <li>
+      <a class="toc-main" href="#manual-tecnico">Manual Técnico</a>
+      <ul class="toc-sub">
+        <li><a href="#mt-arquitectura">12.1 Arquitectura y responsabilidades</a></li>
+        <li><a href="#mt-config">12.2 Configuración externa (JSON)</a></li>
+        <li><a href="#mt-contratos">12.3 Contratos de mantenimiento</a></li>
+        <li><a href="#mt-pruebas">12.4 Pruebas técnicas sugeridas</a></li>
+      </ul>
+    </li>
+    <li><a class="toc-main" href="#objetivos">Objetivos Alcanzados</a></li>
+    <li><a class="toc-main" href="#bibliografia">Bibliografía</a></li>
+  </ol>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="resumen">1. Descripción del Proyecto</h2>
+
+  <p>
+    <code>SimuladorMiniPC</code> es una aplicación de escritorio educativa que implementa un simulador de sistema operativo de tiempo discreto.
+    Modela los mecanismos fundamentales de gestión de procesos: ciclo de vida, planificación de CPU, asignación de memoria, interrupciones y dispositivos de E/S.
+  </p>
+
+  <div class="panel">
+    <table>
+      <thead><tr><th>Concepto simulado</th><th>Mecanismo</th></tr></thead>
+      <tbody>
+        <tr><td>Multiprogramación</td><td>Hasta 5 procesos concurrentes en memoria</td></tr>
+        <tr><td>Estados de proceso</td><td>7 estados: NEW → READY → RUNNING → BLOCKED → TERMINATED</td></tr>
+        <tr><td>Planificación</td><td>Política activa actual: FCFS (infraestructura extensible para otras políticas)</td></tr>
+        <tr><td>Gestión de memoria</td><td>RAM 700 celdas, first-fit, área del SO (celdas 0–19)</td></tr>
+        <tr><td>Memoria virtual</td><td>Traducción base+offset por proceso; validación de offsets</td></tr>
+        <tr><td>Interrupciones</td><td>INT 20H, INT 10H, INT 09H, INT 21H</td></tr>
+        <tr><td>E/S con latencias</td><td>Teclado (MAX_VALUE), Pantalla (1 tick), Disco (5 ticks)</td></tr>
+        <tr><td>Estadísticas</td><td>Utilización CPU, throughput, tiempos de espera/retorno/respuesta</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 id="stack">Stack Tecnológico</h3>
+  <table>
+    <thead><tr><th>Componente</th><th>Versión</th><th>Rol</th></tr></thead>
+    <tbody>
+      <tr><td>Java</td><td>25</td><td>Lenguaje principal</td></tr>
+      <tr><td>JavaFX</td><td>24</td><td>Scene Graph, ObservableList, bindings, Timeline, TableView</td></tr>
+      <tr><td>NetBeans Ant</td><td>—</td><td>build.xml, nbproject/ — compilación y empaquetado</td></tr>
+      <tr><td>JSON (sin libs)</td><td>—</td><td>MemoryConfig, DiskConfig y AssemblerConfig parsean con regex propio</td></tr>
+      <tr><td>PlantUML</td><td>—</td><td>Diagramas UML en <code>documentacion/diagramas/</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="arquitectura">Arquitectura General</h3>
+  <p>El sistema sigue el patrón <strong>MVC</strong> con extensión <strong>Observer</strong> para desacoplar el kernel de la UI:</p>
+  <pre>
+┌──────────────────────────────────────────────────────────────────┐
+│  VISTA — SimuladorApp (JavaFX Scene Graph)                       │
+│    vincula ObservableList/Property a TableView, Label, ListView  │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ posee
+                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  CONTROLADOR — SimuladorController                               │
+│    implementa KernelEventListener (Observer)                     │
+│    expone ObservableList y StringProperty a la vista             │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ posee
+                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  MODELO — Kernel (Facade)                                        │
+│  ┌──────────┬──────────┬──────────┬──────────┬────────────┐     │
+│  │assembler │  clock   │   cpu    │ interrupt│     io     │     │
+│  ├──────────┼──────────┼──────────┼──────────┼────────────┤     │
+│  │ memory   │  model   │ process  │scheduler │stats/storage│    │
+│  └──────────┴──────────┴──────────┴──────────┴────────────┘     │
+└──────────────────────────────────────────────────────────────────┘</pre>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="paquetes">2. Inventario de Paquetes</h2>
+
+  <p>
+    Esta sección presenta el mapa modular del simulador desde una perspectiva de arquitectura.
+    Su propósito es explicar cómo se distribuyen responsabilidades por paquete para reforzar mantenibilidad,
+    trazabilidad de cambios y estrategia de pruebas.
+  </p>
+
+  <p>Total: <strong>14 paquetes</strong>, <strong>43 clases Java</strong>.</p>
+
+  <pre>
+simuladorminipc (raíz)
+├── assembler    ← parser léxico/sintáctico del ASM propio
+├── clock        ← reloj global monotónico
+├── cpu          ← CPU virtual + Dispatcher
+├── fx           ← capa de presentación JavaFX
+├── interrupt    ← cola FIFO de interrupciones
+├── io           ← dispositivos de E/S con latencias
+├── kernel       ← núcleo orquestador (Fachada)
+├── memory       ← RAM, first-fit, traducción virtual, area del SO
+├── model        ← PCB, RegisterSet, ProcessState, IORequest
+├── process      ← admisión, colas y transiciones de estado
+├── scheduler    ← política activa FCFS (otras políticas en código)
+├── stats        ← métricas de rendimiento
+└── storage      ← disco secundario simulado</pre>
+
+  <h3 id="assembler-pkg">simuladorminipc.assembler</h3>
+  <p>Análisis léxico y sintáctico. Transforma archivos <code>.asm</code> en listas de objetos <code>Instruction</code> listos para ejecutar.</p>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>Assembler</code></td><td>Clase utilitaria estática. <code>parse(File)</code> tokeniza y valida cada línea. Límite de instrucciones configurable.</td></tr>
+      <tr><td><code>AssemblerConfig</code></td><td>Lee <code>assembler-config.json</code> del classpath. Expone <code>maxInstructions</code> (default 80; 0 = sin límite).</td></tr>
+      <tr><td><code>Instruction</code></td><td>Objeto de valor inmutable: tipo, operandos, línea fuente, peso.</td></tr>
+      <tr><td><code>InstructionType</code></td><td>Enum de 19 tipos con su peso de CPU.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="clock-pkg">simuladorminipc.clock</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>SystemClock</code></td><td>Contador <code>long</code> monotónico. <code>tick()</code>, <code>reset()</code>, <code>getCurrentTick()</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="cpu-pkg">simuladorminipc.cpu</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>CPU</code></td><td>Unidad de procesamiento. <code>executeCycle()</code> descuenta peso y llama a <code>applyInstruction()</code>.</td></tr>
+      <tr><td><code>Dispatcher</code></td><td>Cambios de contexto formales: <code>dispatch(PCB, CPU)</code> y <code>preempt(CPU)</code>. Contabiliza switches.</td></tr>
+      <tr><td><code>CycleEvent</code></td><td>Valor inmutable resultado de un ciclo. 7 fábricas estáticas.</td></tr>
+      <tr><td><code>CycleResult</code></td><td>Enum: NORMAL, PROCESS_FINISHED, SCREEN_OUTPUT, KEYBOARD_INPUT, FILE_OPERATION, IDLE, ERROR.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="fx-pkg">simuladorminipc.fx</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>SimuladorApp</code></td><td>Extiende Application. Construye escena 1440×860 px con SplitPane de 3 columnas, barra de herramientas, tablas de cola, panel BCP, log y TabPane RAM/Disco.</td></tr>
+      <tr><td><code>SimuladorController</code></td><td>Implementa KernelEventListener. Expone ObservableList y StringProperty. Contiene ProcessRow, MemoryRow, DiskRow.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="interrupt-pkg">simuladorminipc.interrupt</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>InterruptManager</code></td><td>Cola FIFO con ArrayDeque. <code>raise()</code>, <code>poll()</code>, <code>clear()</code>, <code>snapshot()</code>.</td></tr>
+      <tr><td><code>Interrupt</code></td><td>Valor inmutable: tipo, PCB fuente, payload, intValue.</td></tr>
+      <tr><td><code>InterruptType</code></td><td>Enum de 9 tipos: PROCESS_FINISHED, QUANTUM_EXPIRED, IO_REQUEST, IO_FINISHED, PAGE_FAULT, KEYBOARD_INPUT, FILE_OPERATION, SCREEN_OUTPUT, RUNTIME_ERROR.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="io-pkg">simuladorminipc.io</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>IOManager</code></td><td>3 instancias de Device + Map&lt;Integer,PCB&gt; de procesos en espera. submit/complete/tick/reset.</td></tr>
+      <tr><td><code>Device</code></td><td>TECLADO(MAX_VALUE), PANTALLA(1), DISCO(5) ticks de latencia. assign/tick/checkComplete/release.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="kernel-pkg">simuladorminipc.kernel</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>Kernel</code></td><td>Propietario de todos los subsistemas. Pipeline de 10 etapas en executeTick(). Estado: booted, halted, waitingForKeyboard.</td></tr>
+      <tr><td><code>KernelEventListener</code></td><td>Interfaz Observer con 7 callbacks: onTickCompleted, onProcessStateChanged, onScreenOutput, onKeyboardInputRequired, onFileOperation, onExecutionError, onAllFinished.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="memory-pkg">simuladorminipc.memory</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>RAM</code></td><td>String[] de 700 celdas. OS_RESERVED=20. read/write/clearRange.</td></tr>
+      <tr><td><code>MemoryManager</code></td><td>Asignador first-fit. allocate/free/updateBcpOsArea/storeBcpInOsArea.</td></tr>
+      <tr><td><code>MemoryBlock</code></td><td>Descriptor: base, size, pid, free. getLimit().</td></tr>
+      <tr><td><code>MemoryConfig</code></td><td>Lee <code>memory-config.json</code> con regex. Fallback: RAM=512.</td></tr>
+      <tr><td><code>VirtualMemoryManager</code></td><td>translate(PCB, offset) = base+offset. isValid() valida rango.</td></tr>
+      <tr><td><code>SwapManager</code></td><td>Placeholder. swapOut/swapIn definidos pero no completamente implementados.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="model-pkg">simuladorminipc.model</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>PCB</code></td><td>Bloque de Control de Proceso. PID atómico, 28 campos, instructions, registers, IO.</td></tr>
+      <tr><td><code>ProcessState</code></td><td>Enum 7 estados: NEW, READY, RUNNING, BLOCKED, SUSPENDED_READY, SUSPENDED_BLOCKED, TERMINATED.</td></tr>
+      <tr><td><code>RegisterSet</code></td><td>ac, ax, bx, cx, dx, ir, pc, ah, al, dxString, zeroFlag, stack[5], stackPointer.</td></tr>
+      <tr><td><code>IORequest</code></td><td>Solicitud E/S: Operation (READ/WRITE/CREATE/DELETE/KEYBOARD/SCREEN), countdown, complete.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="process-pkg">simuladorminipc.process</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>ProcessManager</code></td><td>Admisión: MAX_CONCURRENT=5. loadArrivingProcesses(tick) intenta admitir nuevos cada tick.</td></tr>
+      <tr><td><code>QueueManager</code></td><td>5 colas: newQueue (LinkedList), readyQueue, blockedQueue, suspendedQueue, terminatedQueue (ArrayList).</td></tr>
+      <tr><td><code>StateManager</code></td><td>Transiciones legales con guardTransition(). admitToReady, setRunning, preemptToReady, blockOnIO, unblockToReady, terminate.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="scheduler-pkg">simuladorminipc.scheduler</h3>
+  <p>Interfaz <code>SchedulingAlgorithm</code> con <code>selectNextProcess(List&lt;PCB&gt;, PCB currentRunning) → PCB</code> y <code>getName()</code>. En la operación actual del simulador, la política activa es FCFS.</p>
+  <table>
+    <thead><tr><th>Clase</th><th>Criterio</th><th>Apropiativo</th></tr></thead>
+    <tbody>
+      <tr><td><code>FCFSScheduler</code></td><td>Menor arrivalTime (desempate: menor PID)</td><td>No</td></tr>
+    </tbody>
+  </table>
+  <p><code>SchedulingPolicyManager</code> conserva la infraestructura para otras políticas, pero la ejecución vigente se documenta con FCFS.</p>
+
+  <h3 id="stats-pkg">simuladorminipc.stats</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>StatisticsManager</code></td><td>totalTicks, activeTicks, finishedProcesses. Calcula utilización, throughput, tiempos promedio.</td></tr>
+      <tr><td><code>ProcessStats</code></td><td>Snapshot inmutable al terminar: PID, tiempos de inicio/fin/espera/retorno/respuesta/servicio, ratio.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="storage-pkg">simuladorminipc.storage</h3>
+  <table>
+    <thead><tr><th>Clase</th><th>Responsabilidad</th></tr></thead>
+    <tbody>
+      <tr><td><code>Disk</code></td><td>String[1080]. INDEX_SIZE=10. createFile/openFile/writeFile/readFile/deleteFile/storeProgram.</td></tr>
+      <tr><td><code>DiskFile</code></td><td>Descriptor: name, startAddress, size, content. setContent actualiza size.</td></tr>
+      <tr><td><code>DiskConfig</code></td><td>Lee <code>disk-config.json</code>. Configura <code>diskSize</code> y <code>virtualMemorySize</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="clases">3. Clases Clave — Diagrama UML</h2>
+  <p>
+    Esta sección sintetiza la estructura orientada a objetos y el acoplamiento interno del sistema.
+    La lectura recomendada es: clases individuales, relaciones de cardinalidad y, finalmente,
+    especificaciones técnicas de consulta rápida.
+  </p>
+  <p>
+    Ver el diagrama completo en PlantUML: <code>documentacion/diagramas/diagrama_clases_completo.puml</code>.
+    Los diagramas incluidos a continuacion son una vista didactica para lectura rapida en documento.
+  </p>
+
+  <h3 id="pcb-class">PCB — Bloque de Control de Proceso</h3>
+  <p>
+    Esta clase muestra el rol del BCP como contenedor de estado y contexto de ejecucion.
+    Debe leerse de arriba hacia abajo: identidad y tiempos, memoria, registros y metodos de control de flujo.
+  </p>
+  <pre>
+┌───────────────────────────────────────────────────────┐
+│  PCB  (simuladorminipc.model)                         │
+│ ─────────────────────────────────────────────────────│
+│  - pidCounter : static AtomicInteger                  │
+│  - pid : int                                          │
+│  - name : String                                      │
+│  - state : ProcessState                               │
+│  - arrivalTime : long                                 │
+│  - burstTime : long                                   │
+│  - remainingTime : long                               │
+│  - executedTime : long                                │
+│  - priority : int                                     │
+│  - waitingTime, turnaroundTime, responseTime : long   │
+│  - memoryBase, memoryLimit, memoryRequired : int      │
+│  - registers : RegisterSet                            │
+│  - instructions : List&lt;Instruction&gt;                   │
+│  - pendingIORequests : Queue&lt;IORequest&gt;               │
+│  - startTime, endTime : long                          │
+│ ─────────────────────────────────────────────────────│
+│  + getCurrentInstruction() : Instruction              │
+│  + hasMoreInstructions() : boolean                    │
+│  + static resetPidCounter() : void                    │
+└───────────────────────────────────────────────────────┘</pre>
+
+  <h3 id="kernel-class">Kernel</h3>
+  <p>
+    Esta clase describe al <code>Kernel</code> como fachada central del sistema.
+    Resalta la composicion de subsistemas y los puntos publicos de orquestacion por tick.
+  </p>
+  <pre>
+┌───────────────────────────────────────────────────────┐
+│  Kernel  (simuladorminipc.kernel)                     │
+│ ─────────────────────────────────────────────────────│
+│  - clock : SystemClock                                │
+│  - processManager : ProcessManager                    │
+│  - queueManager : QueueManager                        │
+│  - stateManager : StateManager                        │
+│  - scheduler : SchedulingPolicyManager                │
+│  - dispatcher : Dispatcher                            │
+│  - cpu : CPU                                          │
+│  - ioManager : IOManager                              │
+│  - interruptManager : InterruptManager                │
+│  - memoryManager : MemoryManager                      │
+│  - vmm : VirtualMemoryManager                         │
+│  - disk : Disk                                        │
+│  - statisticsManager : StatisticsManager              │
+│  - listeners : List&lt;KernelEventListener&gt;              │
+│  - booted, halted : boolean                           │
+│  - waitingForKeyboard : PCB                           │
+│ ─────────────────────────────────────────────────────│
+│  + boot() : void                                      │
+│  + executeTick() : void                               │
+│  + loadProcess(PCB) : void                            │
+│  + provideKeyboardInput(int) : void                   │
+│  + reset() : void                                     │
+│  + setPolicy(Policy) : void                           │
+│  + setQuantum(int) : void                             │
+│  + addListener(KernelEventListener) : void            │
+└───────────────────────────────────────────────────────┘</pre>
+
+  <h3 id="cpu-class">CPU</h3>
+  <p>
+    El diagrama UML de <code>CPU</code> resume el ciclo de ejecucion y su dependencia de memoria virtual y disco.
+    Permite ubicar rapidamente donde se transforma una instruccion en un <code>CycleEvent</code>.
+  </p>
+  <pre>
+┌───────────────────────────────────────────────────────┐
+│  CPU  (simuladorminipc.cpu)                           │
+│ ─────────────────────────────────────────────────────│
+│  - id : int                                           │
+│  - currentProcess : PCB                               │
+│  - cycleCountdown : int                               │
+│  - disk : Disk                                        │
+│  - vmm : VirtualMemoryManager                         │
+│ ─────────────────────────────────────────────────────│
+│  + executeCycle() : CycleEvent                        │
+│  - applyInstruction(Instruction) : CycleEvent         │
+│  + loadProcess(PCB) : void                            │
+│  + releaseProcess() : void                            │
+│  + isIdle() : boolean                                 │
+│  + getCurrentProcess() : PCB                         │
+└───────────────────────────────────────────────────────┘</pre>
+
+  <h3 id="dispatcher-class">Dispatcher</h3>
+  <p>
+    Esta clase separa claramente la responsabilidad de cambio de contexto respecto de la logica del planificador,
+    lo cual facilita medir y auditar los <em>context switches</em>.
+  </p>
+  <pre>
+┌───────────────────────────────────────────────────────┐
+│  Dispatcher  (simuladorminipc.cpu)                    │
+│ ─────────────────────────────────────────────────────│
+│  - contextSwitches : int                              │
+│ ─────────────────────────────────────────────────────│
+│  + dispatch(PCB, CPU) : void                          │
+│  + preempt(CPU) : void                                │
+│  + getContextSwitches() : int                         │
+│  + reset() : void                                     │
+└───────────────────────────────────────────────────────┘</pre>
+
+  <h3 id="controller-class">SimuladorController</h3>
+  <p>
+    Esta clase muestra el puente entre UI y modelo: el controlador observa eventos del kernel,
+    mantiene colecciones observables y sincroniza la representacion visual del estado interno.
+  </p>
+  <pre>
+┌───────────────────────────────────────────────────────────────┐
+│  SimuladorController  (fx)  implements KernelEventListener    │
+│ ─────────────────────────────────────────────────────────────│
+│  - kernel : Kernel                                            │
+│  - autoTimeline : Timeline (400 ms)                           │
+│  - newQueueRows, readyQueueRows, blockedQueueRows,            │
+│    terminatedQueueRows : ObservableList&lt;ProcessRow&gt;           │
+│  - memoryRows : ObservableList&lt;MemoryRow&gt;                     │
+│  - diskRows : ObservableList&lt;DiskRow&gt;                         │
+│  - currentTickProp : LongProperty                             │
+│  - cpuStatusProp, cpuProcessProp, reg*Prop : StringProperty   │
+│  - waitingForKeyboardProcess : PCB                            │
+│ ─────────────────────────────────────────────────────────────│
+│  + loadFiles() : void                                         │
+│  + step() : void                                              │
+│  + toggleAuto() : void                                        │
+│  + startSingleProcess() : void                                │
+│  + reset() : void                                             │
+│  + provideKeyboardInput(int) : void                           │
+│  + refreshUI() : void                                         │
+│  [KernelEventListener] onTickCompleted, onProcessStateChanged,│
+│  onScreenOutput, onKeyboardInputRequired, onAllFinished, etc. │
+└───────────────────────────────────────────────────────────────┘</pre>
+
+  <h3 id="uml-clases-card">3.1 Acoplamiento UML de Clases (Cardinalidad)</h3>
+  <p>
+    Diagrama UML de relaciones entre clases con cardinalidad. Se centra en composicion del <code>Kernel</code>,
+    asociaciones de ejecucion (CPU-PCB) y dependencias de infraestructura (RAM, disco, listeners).
+  </p>
+  <pre>
+SimuladorController "1" ---- "1" Kernel : controla
+Kernel "1" *---- "1" CPU : compone
+Kernel "1" *---- "1" Dispatcher : compone
+Kernel "1" *---- "1" SchedulingPolicyManager : compone
+Kernel "1" *---- "1" ProcessManager : compone
+Kernel "1" *---- "1" QueueManager : compone
+Kernel "1" *---- "1" StateManager : compone
+Kernel "1" *---- "1" MemoryManager : compone
+Kernel "1" *---- "1" VirtualMemoryManager : compone
+Kernel "1" *---- "1" Disk : compone
+Kernel "1" *---- "1" IOManager : compone
+Kernel "1" *---- "1" StatisticsManager : compone
+
+CPU "1" ---- "0..1" PCB : ejecuta
+QueueManager "1" *---- "0..*" PCB : organiza colas
+Disk "1" *---- "0..*" DiskFile : almacena archivos
+MemoryManager "1" *---- "1" RAM : administra
+VirtualMemoryManager "1" ---- "1" SwapManager : respalda
+Kernel "1" ---- "0..*" KernelEventListener : notifica
+  </pre>
+
+  <h3 id="uml-paquetes-card">3.2 Acoplamiento UML de Paquetes (Cardinalidad)</h3>
+  <p>
+    En esta subseccion se incluyen dos diagramas UML de paquetes para que la arquitectura sea visible y explicativa:
+    una vista estructural y una vista de flujo de dependencias. Ambos diagramas estan pensados para lectura didactica.
+  </p>
+
+  <h4 id="uml-paquetes-estructural">3.2.1 Diagrama UML de Paquetes — Vista Estructural</h4>
+  <p>
+    Esta vista ubica el paquete <code>kernel</code> como nucleo y muestra los paquetes de soporte que lo rodean.
+    Las flechas indican dependencias de uso y las etiquetas muestran la intencion de cada acoplamiento.
+  </p>
+  <pre>
+                        +----------------------+
+                        |          fx          |
+                        |  UI / Controller     |
+                        +----------+-----------+
+                                   |
+                                   | controla
+                                   v
+ +-------------+    +-------------+-------------+    +-------------+
+ | assembler   |--->|            kernel         |<---|   stats     |
+ | parse ASM   |    |  orquesta el pipeline     |    | metricas    |
+ +------+------+    +------+------+------+-------+    +------+------+
+        |                  |      |      |                   ^
+        | produce          |      |      |                   |
+        v                  v      v      v                   |
+ +------+------+    +------+ +----+----+ +------+-----+      |
+ |  model    |<-----|process| |scheduler| | interrupt |------+
+ | PCB/regs  |      |colas  | | FCFS    | | eventos   |
+ +---+-------+      +---+---+ +----+----+ +------+----+
+     ^                  |          |             |
+     |                  | usa PCB  | elige PCB   | referencia PCB
+     |                  v          v             v
+ +---+-------+      +---+---------------------------+
+ |  memory   |----->|             io                |
+ | RAM/VMM   |      | dispositivos y latencias      |
+ +---+-------+      +---+---------------------------+
+     |
+     | swap/respaldo
+     v
+ +---+----------------+
+ |      storage       |
+ | disco / archivos   |
+ +--------------------+
+  </pre>
+
+  <h4 id="uml-paquetes-flujo">3.2.2 Diagrama UML de Paquetes — Flujo Operativo por Tick</h4>
+  <p>
+    Esta vista enfatiza el recorrido funcional durante un tick: admision, seleccion, ejecucion, interrupcion,
+    E/S y retroalimentacion de metricas hacia la interfaz.
+  </p>
+  <pre>
+fx
+ |
+ | step()/auto
+ v
+kernel ---> process ---> memory
+  |           |           |
+  |           |           +--> storage
+  |           |
+  +--> scheduler ---> cpu ---> interrupt ---> io
+  |                                       |
+  +---------------------------------------+
+  |
+  +--> stats ---> fx (actualiza paneles)
+  </pre>
+
+  <p><strong>Nota*:</strong> <code>A ---> B</code> significa que A depende de B para completar su responsabilidad en el ciclo de ejecucion.</p>
+  <pre>
+fx "1" ---- "1" kernel : UI controla núcleo
+kernel "1" ---- "1" cpu
+kernel "1" ---- "1" process
+kernel "1" ---- "1" scheduler
+kernel "1" ---- "1" memory
+kernel "1" ---- "1" io
+kernel "1" ---- "1" interrupt
+kernel "1" ---- "1" storage
+kernel "1" ---- "1" stats
+
+process "1" ---- "0..*" model : gestiona múltiples PCB
+scheduler "1" ---- "0..*" model : evalúa procesos listos
+memory "1" ---- "1" storage : swap/respaldo en disco
+assembler "1" ---- "0..*" model : produce listas de Instruction
+interrupt "1" ---- "0..*" model : referencia proceso origen
+  </pre>
+
+  <h3 id="javadoc-clases">3.3 Especificación de Clases</h3>
+  <p>La siguiente sección documenta objetivo, atributos, constructores y métodos clave para facilitar mantenimiento y trazabilidad.</p>
+
+  <h4>Clase: <code>PCB</code> (simuladorminipc.model)</h4>
+  <pre>
+/**
+ * Objetivo:
+ *   Representar el Bloque de Control de Proceso con toda la información
+ *   necesaria para planificación, ejecución, memoria y estadísticas.
+ *
+ * Atributos principales:
+ *   @field pid               Identificador único del proceso.
+ *   @field state             Estado actual del ciclo de vida del proceso.
+ *   @field instructions      Lista inmutable/lógica de instrucciones ASM.
+ *   @field registers         Snapshot de registros de CPU del proceso.
+ *   @field memoryBase/limit  Rango físico asignado en RAM.
+ *
+ * Métodos clave:
+ *   @method getCurrentInstruction()
+ *     @return Instruction instrucción actual según PC.
+ *   @method hasMoreInstructions()
+ *     @return boolean true si el proceso puede seguir ejecutando.
+ */
+  </pre>
+
+  <h4>Clase: <code>Kernel</code> (simuladorminipc.kernel)</h4>
+  <pre>
+/**
+ * Objetivo:
+ *   Orquestar todos los subsistemas del simulador y ejecutar el pipeline
+ *   de 10 etapas por tick.
+ *
+ * Atributos principales:
+ *   @field cpu, dispatcher, policyManager   Núcleo de ejecución y planificación.
+ *   @field queueManager, stateManager       Gestión de colas y transiciones.
+ *   @field memoryManager, vmManager, disk   Gestión de memoria y almacenamiento.
+ *   @field ioManager, interruptManager      Interrupciones y E/S.
+ *
+ * Constructores:
+ *   @constructor Kernel(int ramSize, int diskSize)
+ *     @param ramSize  tamaño de RAM simulada en celdas.
+ *     @param diskSize tamaño de disco simulado en celdas.
+ *
+ * Métodos clave:
+ *   @method boot() Inicializa reloj, banderas y estado del kernel.
+ *   @method executeTick() Ejecuta un ciclo completo del SO simulado.
+ *   @method loadProgram(File file, int arrivalTime, int priority)
+ *     @param file archivo asm a ensamblar y cargar.
+ *     @param arrivalTime tick de llegada del proceso.
+ *     @param priority prioridad inicial (numérica).
+ */
+  </pre>
+
+  <h4>Clase: <code>CPU</code> (simuladorminipc.cpu)</h4>
+  <pre>
+/**
+ * Objetivo:
+ *   Ejecutar instrucciones del proceso activo y producir eventos de ciclo.
+ *
+ * Atributos principales:
+ *   @field currentProcess  PCB cargado actualmente en CPU.
+ *   @field cycleCountdown  Ticks restantes para finalizar instrucción pesada.
+ *
+ * Métodos clave:
+ *   @method executeCycle()
+ *     @return CycleEvent resultado del ciclo (normal, I/O, finalización, error).
+ *   @method loadProcess(PCB p)
+ *     @param p proceso a cargar en CPU.
+ *   @method releaseProcess()
+ *     @return PCB proceso desalojado/liberado de CPU.
+ */
+  </pre>
+
+  <h4>Clase: <code>SimuladorController</code> (simuladorminipc.fx)</h4>
+  <pre>
+/**
+ * Objetivo:
+ *   Actuar como controlador/presenter entre Kernel y vista JavaFX.
+ *
+ * Atributos principales:
+ *   @field kernel          Fachada principal del modelo.
+ *   @field autoTimeline    Temporizador para autoejecución.
+ *   @field *Rows           Colecciones observables para tablas de UI.
+ *   @field stat*           Propiedades de métricas para binding visual.
+ *
+ * Constructor:
+ *   @constructor SimuladorController()
+ *     Carga MemoryConfig + DiskConfig, crea Kernel y registra listeners.
+ *
+ * Métodos clave:
+ *   @method loadFiles(List&lt;File&gt; files)
+ *     @param files archivos ASM seleccionados por usuario.
+ *     @return List&lt;String&gt; errores de parseo/carga.
+ *   @method step() avanza un tick y refresca paneles.
+ *   @method reset() limpia estado completo de simulación.
+ */
+  </pre>
+
+  <h4>Clase: <code>MemoryConfig</code> (simuladorminipc.memory)</h4>
+  <pre>
+/**
+ * Objetivo:
+ *   Cargar configuración de RAM desde memory-config.json.
+ *
+ * Atributos:
+ *   @field ramSize tamaño total de memoria principal (celdas).
+ *
+ * Métodos:
+ *   @method load()   Carga config desde classpath con fallback seguro.
+ *   @method defaults() Devuelve valores por defecto del subsistema.
+ */
+  </pre>
+
+  <h4>Clase: <code>DiskConfig</code> (simuladorminipc.storage)</h4>
+  <pre>
+/**
+ * Objetivo:
+ *   Cargar configuración de disco y memoria virtual desde disk-config.json.
+ *
+ * Atributos:
+ *   @field diskSize            tamaño del almacenamiento secundario.
+ *   @field virtualMemorySize   tamaño de espacio virtual por proceso.
+ *
+ * Métodos:
+ *   @method load() carga valores configurables del classpath.
+ *   @method defaults() valores de respaldo cuando no hay archivo válido.
+ */
+  </pre>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="pipeline">4. Pipeline de Ejecución</h2>
+
+  <p>
+    Esta sección explica, de forma secuencial, cómo se ejecuta el sistema operativo simulado en tiempo discreto.
+    Cada tick mantiene un orden estable para garantizar reproducibilidad, depuración y consistencia métrica.
+  </p>
+
+  <h3 id="tick-pipeline">4.1 Ciclo Tick — 10 Etapas</h3>
+  <div class="pipeline">
+    <div class="step"><span class="num">①</span> clock.tick()</div>
+    <div class="step"><span class="num">②</span> processManager.loadArrivingProcesses()</div>
+    <div class="step"><span class="num">③</span> ioManager.tick()</div>
+    <div class="step"><span class="num">④</span> scheduleAndDispatch()</div>
+    <div class="step"><span class="num">⑤</span> cpu.executeCycle()</div>
+    <div class="step"><span class="num">⑥</span> handleCycleEvent()</div>
+    <div class="step"><span class="num">⑦</span> quantum check (RR)</div>
+    <div class="step"><span class="num">⑧</span> statisticsManager.onTick()</div>
+    <div class="step"><span class="num">⑨</span> fireTickCompleted() → UI</div>
+    <div class="step"><span class="num">⑩</span> allFinished() check</div>
+  </div>
+
+  <p>
+    El método <code>executeTick()</code> siempre sigue este orden fijo. La idea es: primero se actualiza el tiempo y el estado interno del sistema,
+    luego se ejecuta CPU, y al final se publican resultados y se verifica el cierre de la simulación.
+  </p>
+
+  <table>
+    <thead><tr><th>Etapa</th><th>Qué hace</th><th>Resultado inmediato</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>① <code>clock.tick()</code></td>
+        <td>Incrementa el reloj global del sistema.</td>
+        <td>El tick actual avanza en 1; todas las decisiones del ciclo usan este nuevo valor.</td>
+      </tr>
+      <tr>
+        <td>② <code>processManager.loadArrivingProcesses()</code></td>
+        <td>Revisa procesos en <code>NEW</code> cuyo tiempo de llegada ya se cumplió e intenta admitirlos.</td>
+        <td>Si hay RAM disponible pasan a <code>READY</code>; si no, permanecen en <code>NEW</code>.</td>
+      </tr>
+      <tr>
+        <td>③ <code>ioManager.tick()</code></td>
+        <td>Avanza los contadores de latencia de dispositivos de E/S.</td>
+        <td>Los procesos con E/S finalizada se desbloquean y regresan a <code>READY</code>.</td>
+      </tr>
+      <tr>
+        <td>④ <code>scheduleAndDispatch()</code></td>
+        <td>El planificador elige el siguiente proceso elegible y el dispatcher realiza el cambio de contexto.</td>
+        <td>La CPU queda cargada con el proceso que correrá en este tick (si existe alguno).</td>
+      </tr>
+      <tr>
+        <td>⑤ <code>cpu.executeCycle()</code></td>
+        <td>Ejecuta una unidad de trabajo de CPU sobre el proceso actual.</td>
+        <td>Devuelve un <code>CycleEvent</code> que resume lo ocurrido en la ejecución.</td>
+      </tr>
+      <tr>
+        <td>⑥ <code>handleCycleEvent()</code></td>
+        <td>Interpreta el evento de CPU y aplica transiciones de estado o interrupciones según corresponda.</td>
+        <td>Se procesa el caso: normal, finalización, error, solicitud de E/S, teclado o salida a pantalla.</td>
+      </tr>
+      <tr>
+        <td>⑦ Quantum check (extensión futura)</td>
+        <td>Reservado para políticas con quantum. En FCFS activo esta verificación no produce desalojo.</td>
+        <td>Sin efecto operativo en FCFS; queda como punto de extensión del pipeline.</td>
+      </tr>
+      <tr>
+        <td>⑧ <code>statisticsManager.onTick()</code></td>
+        <td>Actualiza métricas globales del sistema y persiste el BCP en área del SO.</td>
+        <td>Se actualizan <code>totalTicks</code>, <code>activeTicks</code> y snapshots de estado para análisis.</td>
+      </tr>
+      <tr>
+        <td>⑨ <code>fireTickCompleted()</code></td>
+        <td>Notifica a los listeners (UI/controlador) que el tick terminó.</td>
+        <td>La interfaz se refresca con colas, CPU, memoria, disco y registros actualizados.</td>
+      </tr>
+      <tr>
+        <td>⑩ <code>allFinished()</code> check</td>
+        <td>Comprueba si ya no quedan procesos por ejecutar.</td>
+        <td>Si todo terminó, el kernel marca <code>halted=true</code> y dispara <code>onAllFinished()</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Resumen práctico:</strong> cada tick ejecuta exactamente una vuelta completa del sistema operativo simulado: admitir, desbloquear, planificar, ejecutar, registrar y notificar.</p>
+
+  <h3 id="secuencia-carga">4.2 Diagrama de Secuencia — Carga de Archivo</h3>
+  <p>
+    Diagrama UML de secuencia que describe el caso de uso de carga: desde la accion del usuario,
+    pasando por ensamblado, creacion de PCB y admision efectiva al sistema.
+  </p>
+  <pre>
+Usuario  SimuladorController   Assembler   Kernel   MemoryManager   QueueManager
+   │           │                   │          │           │               │
+   ├─loadFiles()►                  │          │           │               │
+   │           ├──parse(file)─────►│          │           │               │
+   │           │◄──List&lt;Instruction&gt;          │           │               │
+   │           ├──new PCB(instructions)       │           │               │
+   │           ├──loadProcess(PCB)───────────►│           │               │
+   │           │                              ├─submit(PCB)──────────────►│
+   │           │                              │           │         admitToNew(PCB)
+   │           │              [siguiente tick]│           │               │
+   │           ├──step()─────────────────────►│           │               │
+   │           │                              ├─allocate(PCB)────────────►│
+   │           │                              │◄─true     │               │
+   │           │                              ├─admitToReady(PCB)─────────►│
+   │           │◄─onTickCompleted(tick)────────│           │               │
+   │◄─refreshUI()                              │           │               │</pre>
+
+  <h3 id="secuencia-tick">4.3 Diagrama de Secuencia — Tick Completo</h3>
+  <p>
+    Diagrama UML de secuencia para un tick de ejecucion: seleccion del proceso, despacho,
+    ejecucion en CPU, manejo del evento y actualizacion de metricas/UI.
+  </p>
+  <pre>
+Kernel  CPU  SchedulingPolicyMgr  Dispatcher  StateManager  StatisticsMgr
+  │      │           │                │             │              │
+  ├─selectNext(readyQueue)────────────│             │              │
+  │      │          ►│                │             │              │
+  │      │◄──PCB─────│                │             │              │
+  ├──────────────────────dispatch(PCB,CPU)          │              │
+  │      │            │              ►│             │              │
+  │      │◄─loadProcess(PCB)          │  setRunning(PCB)          │
+  │      │            │               │────────────►│              │
+  ├─executeCycle()    │               │             │              │
+  │     ►│            │               │             │              │
+  │      ├─applyInstruction(instr)    │             │              │
+  │      │◄─CycleEvent │              │             │              │
+  │◄─CycleEvent        │              │             │              │
+  ├─handleCycleEvent(ev)              │             │              │
+  ├─onTick(tick)──────────────────────────────────────────────────►│
+  ├─fireTickCompleted() → SimuladorController.onTickCompleted()    │</pre>
+
+  <hr>
+
+    <!-- ================================================================ -->
+    <h2 id="memoria">5. Gestión de Memoria</h2>
+
+  <p>
+    Esta sección detalla la asignación de memoria principal, la validación del direccionamiento virtual
+    y los parámetros configurables para ejecutar escenarios con diferentes perfiles de carga.
+  </p>
+
+  <h3 id="firstfit">5.1 Algoritmo First-Fit</h3>
+  <pre>
+Estructura de RAM (700 celdas):
+  Celdas 0–19   → Área del SO (BCPs de procesos activos)
+  Celdas 20–699 → Área de usuario (instrucciones de procesos)
+
+Al admitir proceso P con memoryRequired = N:
+  Para cada MemoryBlock b (ascendente por dirección):
+    si b.free && b.size >= N:
+      b.free = false;  b.pid = P.pid
+      P.memoryBase = b.base;  P.memoryLimit = b.base + b.size - 1
+      Escribe instrucciones en RAM[b.base .. b.base+N-1]
+      return true
+  return false  ← proceso permanece en NEW</pre>
+
+  <h3 id="virtual">5.2 Traducción de Memoria Virtual</h3>
+  <pre>
+Dirección física = P.memoryBase + virtualOffset
+
+Validación:
+  si virtualOffset &lt; 0 || virtualOffset >= (P.memoryLimit - P.memoryBase):
+    → CycleEvent.error("Acceso fuera de rango de memoria")</pre>
+
+  <table>
+    <thead><tr><th>Parámetro</th><th>Valor actual</th><th>Configurable en</th></tr></thead>
+    <tbody>
+      <tr><td>ramSize</td><td>700</td><td>memory-config.json</td></tr>
+      <tr><td>virtualMemorySize</td><td>80</td><td>disk-config.json</td></tr>
+      <tr><td>diskSize</td><td>1080</td><td>disk-config.json</td></tr>
+      <tr><td>maxInstructions</td><td>80</td><td>assembler-config.json</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="interrupciones">6. Interrupciones y E/S</h2>
+
+  <p>
+    Aquí se resume el modelo de interrupciones y su interacción con los dispositivos de entrada/salida,
+    incluyendo latencias operativas y su impacto directo sobre el ciclo de estados de los procesos.
+  </p>
+
+  <h3 id="latencias-io">Latencias de dispositivos</h3>
+  <table>
+    <thead><tr><th>Dispositivo</th><th>Latencia</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td>Teclado</td><td>Integer.MAX_VALUE</td><td>No completa automáticamente; requiere provideKeyboardInput()</td></tr>
+      <tr><td>Pantalla</td><td>1 tick</td><td>No bloquea al proceso en la práctica</td></tr>
+      <tr><td>Disco</td><td>5 ticks</td><td>Bloquea el proceso 5 ticks completos</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="tipos-interrupcion">Tipos de interrupción (InterruptType)</h3>
+  <pre>
+PROCESS_FINISHED  ← INT 20H o PC fuera de rango
+QUANTUM_EXPIRED   ← reservado para políticas con quantum (no activo en FCFS)
+IO_REQUEST        ← INT 09H o INT 21H
+IO_FINISHED       ← device.checkComplete() == true
+PAGE_FAULT        ← acceso a página no cargada (extensión futura)
+KEYBOARD_INPUT    ← usuario envía valor por campo de teclado
+FILE_OPERATION    ← subcódigo de disco (INT 21H)
+SCREEN_OUTPUT     ← INT 10H
+RUNTIME_ERROR     ← stack overflow, underflow, instrucción inválida</pre>
+
+  <h3 id="flujo-disco">Flujo de solicitud de disco (INT 21H)</h3>
+  <pre>
+Tick N:   INT 21H → CycleEvent.fileOperation(ah, dxString)
+          ioManager.submitFileRequest(P, subcode, filename)
+          stateManager.blockOnIO(P) → BLOCKED
+Tick N+5: device.checkComplete() == true
+          stateManager.unblockToReady(P) → READY</pre>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="errores">7. Manejo de Errores</h2>
+
+  <p>
+    Esta sección clasifica los errores en dos momentos del ciclo de vida: carga (parseo) y ejecución (runtime).
+    El objetivo es evidenciar cómo se aísla cada falla sin comprometer la continuidad de la simulación global.
+  </p>
+
+  <h3 id="errores-parse">Errores de parse (carga)</h3>
+  <table>
+    <thead><tr><th>Error</th><th>Excepción</th><th>Efecto</th></tr></thead>
+    <tbody>
+      <tr><td>Opcode desconocido</td><td><code>Exception("[Línea N] Instrucción desconocida: 'X'")</code></td><td>Archivo rechazado; demás continúan</td></tr>
+      <tr><td>Operandos incorrectos</td><td><code>Exception("[Línea N] Se esperaban N operandos...")</code></td><td>Ídem</td></tr>
+      <tr><td>Registro inválido</td><td><code>Exception("[Línea N] Registro inválido 'EAX'...")</code></td><td>Ídem</td></tr>
+      <tr><td>Literal en registro no-DX</td><td><code>Exception("[Línea N] Los literales solo pueden...")</code></td><td>Ídem</td></tr>
+      <tr><td>Archivo vacío</td><td><code>Exception("El archivo está vacío...")</code></td><td>Ídem</td></tr>
+      <tr><td>Excede maxInstructions</td><td><code>Exception("El programa excede el límite...")</code></td><td>Ídem</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="errores-runtime">Errores de runtime (ejecución)</h3>
+  <table>
+    <thead><tr><th>Error</th><th>Causa</th><th>Efecto</th></tr></thead>
+    <tbody>
+      <tr><td>Stack overflow</td><td>6.º PUSH (pila llena cap=5)</td><td>Proceso termina; memoria liberada; demás continúan</td></tr>
+      <tr><td>Stack underflow</td><td>POP con pila vacía</td><td>Ídem</td></tr>
+      <tr><td>Instrucción no manejada</td><td>InstructionType sin caso en switch</td><td>Ídem — indicaría bug interno</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="metricas">8. Métricas de Rendimiento</h2>
+
+  <p>
+    Esta sección define los indicadores cuantitativos del simulador y las fórmulas empleadas para evaluar
+    eficiencia de CPU, capacidad de procesamiento y calidad temporal de atención a procesos.
+  </p>
+
+  <table>
+    <thead><tr><th>Métrica</th><th>Fórmula</th></tr></thead>
+    <tbody>
+      <tr><td>Utilización de CPU (%)</td><td>activeTicks / totalTicks × 100</td></tr>
+      <tr><td>Throughput</td><td>n_terminados / totalTicks</td></tr>
+      <tr><td>Tiempo de espera promedio</td><td>Σ waitingTime_i / n</td></tr>
+      <tr><td>Tiempo de retorno promedio</td><td>Σ turnaroundTime_i / n</td></tr>
+      <tr><td>Tiempo de respuesta promedio</td><td>Σ responseTime_i / n</td></tr>
+      <tr><td>Ratio de retorno</td><td>turnaroundTime_i / burstTime_i</td></tr>
+    </tbody>
+  </table>
+
+  <p>Definiciones:</p>
+  <ul>
+    <li><code>turnaroundTime = endTime − arrivalTime</code></li>
+    <li><code>responseTime = startTime − arrivalTime</code> (primer tick en CPU)</li>
+    <li><code>waitingTime</code> = ticks acumulados en cola READY</li>
+    <li><code>serviceTime</code> = ticks reales de CPU ejecutados</li>
+  </ul>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="instrucciones">9. Conjunto de Instrucciones ASM</h2>
+
+  <p>
+    Esta sección funciona como referencia operativa del lenguaje ASM del simulador: sintaxis,
+    costo por instrucción y efectos esperados sobre registros, memoria e interrupciones.
+  </p>
+
+  <table>
+    <thead><tr><th>Instrucción</th><th>Sintaxis</th><th>Peso</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td><code>MOV</code></td><td>MOV dest, src</td><td>1</td><td>Copia valor entre registros o asigna literal</td></tr>
+      <tr><td><code>LOAD</code></td><td>LOAD AC, offset</td><td>2</td><td>Carga RAM[base+offset] en AC</td></tr>
+      <tr><td><code>STORE</code></td><td>STORE offset, AC</td><td>2</td><td>Escribe AC en RAM[base+offset]</td></tr>
+      <tr><td><code>ADD</code></td><td>ADD dest, src</td><td>3</td><td>dest = dest + src</td></tr>
+      <tr><td><code>SUB</code></td><td>SUB dest, src</td><td>3</td><td>dest = dest − src</td></tr>
+      <tr><td><code>INC</code></td><td>INC reg</td><td>1</td><td>reg = reg + 1</td></tr>
+      <tr><td><code>DEC</code></td><td>DEC reg</td><td>1</td><td>reg = reg − 1</td></tr>
+      <tr><td><code>SWAP</code></td><td>SWAP r1, r2</td><td>1</td><td>Intercambia dos registros</td></tr>
+      <tr><td><code>CMP</code></td><td>CMP r1, r2</td><td>2</td><td>Activa zeroFlag si r1 == r2</td></tr>
+      <tr><td><code>JMP</code></td><td>JMP N</td><td>2</td><td>Salto incondicional a instrucción N</td></tr>
+      <tr><td><code>JE</code></td><td>JE N</td><td>2</td><td>Salta si zeroFlag == true</td></tr>
+      <tr><td><code>JNE</code></td><td>JNE N</td><td>2</td><td>Salta si zeroFlag == false</td></tr>
+      <tr><td><code>PUSH</code></td><td>PUSH reg</td><td>1</td><td>Apila valor (máx. 5)</td></tr>
+      <tr><td><code>POP</code></td><td>POP reg</td><td>1</td><td>Desapila en registro</td></tr>
+      <tr><td><code>PARAM</code></td><td>PARAM val</td><td>3</td><td>Apila literal entero</td></tr>
+      <tr><td><code>INT 20H</code></td><td>INT 20H</td><td>2</td><td>Termina el proceso</td></tr>
+      <tr><td><code>INT 10H</code></td><td>INT 10H</td><td>2</td><td>Salida a pantalla (AC o DX)</td></tr>
+      <tr><td><code>INT 09H</code></td><td>INT 09H</td><td>3</td><td>Entrada de teclado — bloquea</td></tr>
+      <tr><td><code>INT 21H</code></td><td>INT 21H</td><td>5</td><td>Operación de archivo (AH=subcode, DX=nombre)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Registros válidos:</strong> <code>AC</code>, <code>AX</code>, <code>BX</code>, <code>CX</code>, <code>DX</code>, <code>AH</code>, <code>AL</code></p>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="estados">10. Estados del Proceso</h2>
+
+  <p>
+    Esta sección describe el autómata de estados del proceso y las condiciones que activan cada transición,
+    permitiendo correlacionar eventos de CPU/E/S con cambios observables en las colas del sistema.
+  </p>
+
+  <p>
+    <span class="state s-new">NEW</span>
+    →
+    <span class="state s-ready">READY</span>
+    →
+    <span class="state s-running">RUNNING</span>
+    →
+    <span class="state s-blocked">BLOCKED</span>
+    →
+    <span class="state s-ready">READY</span>
+    →&nbsp;…&nbsp;→
+    <span class="state s-term">TERMINATED</span>
+  </p>
+
+  <table>
+    <thead><tr><th>Transición</th><th>Condición</th><th>Método</th></tr></thead>
+    <tbody>
+      <tr><td>NEW → READY</td><td>arrivalTime ≤ tick, RAM disponible, concurrentes &lt; 5</td><td>admitToReady()</td></tr>
+      <tr><td>READY → RUNNING</td><td>Seleccionado por planificador y CPU ociosa</td><td>setRunning()</td></tr>
+      <tr><td>RUNNING → READY</td><td>No aplica en FCFS actual (sin desalojo por quantum)</td><td>preemptToReady()</td></tr>
+      <tr><td>RUNNING → BLOCKED</td><td>INT 09H o INT 21H</td><td>blockOnIO()</td></tr>
+      <tr><td>BLOCKED → READY</td><td>E/S completada o teclado recibido</td><td>unblockToReady()</td></tr>
+      <tr><td>* → TERMINATED</td><td>INT 20H, PC ≥ instrucciones.size(), error de runtime</td><td>terminate()</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="manual-usuario">11. Manual de Usuario</h2>
+
+  <p>
+    Este manual describe la operación funcional del simulador desde la perspectiva del usuario final,
+    con una guía progresiva: inicio, flujo recomendado, lectura de paneles y resolución de incidencias.
+  </p>
+
+  <h3 id="mu-inicio">11.1 Inicio rápido</h3>
+  <ol>
+    <li>Abra el proyecto <code>simuladorMiniPC</code> en NetBeans.</li>
+    <li>Ejecute <code>F6</code> para iniciar la aplicación.</li>
+    <li>Pulse <code>Cargar archivos</code> y seleccione programas <code>.asm</code>.</li>
+    <li>Use <code>Paso</code> para ejecución detallada o <code>Auto-todos</code> para ejecución continua.</li>
+  </ol>
+
+  <h3 id="mu-flujo">11.2 Flujo operativo recomendado</h3>
+  <ul>
+    <li>Cargar 2-3 programas ASM válidos para observar interacción entre colas.</li>
+    <li>Verificar transición de NEW a READY tras admisión en memoria.</li>
+    <li>Revisar eventos de pantalla/teclado/disco en bitácora.</li>
+    <li>Al terminar, usar panel de métricas para analizar rendimiento.</li>
+  </ul>
+
+  <h3 id="mu-paneles">11.3 Guía de interpretación de paneles</h3>
+  <table>
+    <thead><tr><th>Panel</th><th>Qué observar</th><th>Cuándo usarlo</th></tr></thead>
+    <tbody>
+      <tr><td>BCP en CPU</td><td>Registros, PC/IR, burst restante, estado RUNNING</td><td>Depuración instrucción por instrucción</td></tr>
+      <tr><td>Colas de procesos</td><td>Distribución NEW/READY/BLOCKED/TERMINATED</td><td>Análisis del ciclo de vida y bloqueo</td></tr>
+      <tr><td>RAM</td><td>Asignación por PID (identificador de proceso) y zona reservada del SO</td><td>Validar admisión y first-fit</td></tr>
+      <tr><td>Disco</td><td>Índice de archivos y celdas ocupadas</td><td>Comprobar operaciones INT 21H</td></tr>
+      <tr><td>Bitácora</td><td>Eventos [LOAD], [SCHED], [I/O], [ERROR]</td><td>Trazabilidad temporal de ejecución</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="mu-incidencias">11.4 Manejo de incidencias frecuentes</h3>
+  <ul>
+    <li>Archivo ASM rechazado: revisar línea reportada y sintaxis de operandos.</li>
+    <li>Proceso no avanza: verificar si está BLOCKED por teclado o disco.</li>
+    <li>Entrada de teclado pendiente: proveer valor cuando aparezca solicitud INT 09H.</li>
+    <li>Resultados inesperados: reiniciar simulación y repetir en modo paso a paso.</li>
+  </ul>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="manual-tecnico">12. Manual Técnico</h2>
+
+  <p>
+    Este manual consolida decisiones de diseño, acoplamiento, configuración y mantenimiento.
+    Su finalidad es facilitar la continuidad técnica del proyecto y reducir riesgos durante cambios evolutivos.
+  </p>
+
+  <h3 id="mt-arquitectura">12.1 Arquitectura y responsabilidades</h3>
+  <ul>
+    <li><strong>fx</strong>: UI JavaFX, binding de propiedades, orquestación de interacción.</li>
+    <li><strong>kernel</strong>: ejecución del pipeline por tick y coordinación de subsistemas.</li>
+    <li><strong>memory</strong>: RAM física, asignación first-fit, validación base+offset.</li>
+    <li><strong>storage</strong>: persistencia simulada de archivos y respaldo de memoria virtual.</li>
+    <li><strong>scheduler</strong>: interfaz Strategy, con FCFS operativo en la versión actual.</li>
+  </ul>
+
+  <h3 id="mt-config">12.2 Configuración externa (JSON)</h3>
+  <table>
+    <thead><tr><th>Archivo</th><th>Parámetros</th><th>Subsistema consumidor</th></tr></thead>
+    <tbody>
+      <tr><td><code>memory-config.json</code></td><td><code>ramSize</code></td><td><code>MemoryConfig</code> / <code>Kernel</code></td></tr>
+      <tr><td><code>disk-config.json</code></td><td><code>diskSize</code>, <code>virtualMemorySize</code></td><td><code>DiskConfig</code> / <code>VirtualMemoryManager</code></td></tr>
+      <tr><td><code>assembler-config.json</code></td><td><code>maxInstructions</code></td><td><code>AssemblerConfig</code> / <code>Assembler</code></td></tr>
+    </tbody>
+  </table>
+
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="objetivos">13. Objetivos Alcanzados</h2>
+
+  <p>
+    Esta sección sintetiza los objetivos logrados durante el desarrollo, alineados con los resultados esperados de la
+    fase de proyecto académico (Proyecto 1): modelado de componentes de un sistema operativo, ejecución por ticks,
+    gestión de procesos y evaluación comparativa de políticas de planificación.
+  </p>
+
+  <table>
+    <thead><tr><th>Objetivo académico</th><th>Evidencia de cumplimiento en el simulador</th></tr></thead>
+    <tbody>
+      <tr><td>Modelar la arquitectura básica de un SO</td><td>Núcleo con subsistemas separados (CPU, memoria, scheduler, E/S, interrupciones, estadísticas, almacenamiento) y coordinación central en <code>Kernel</code>.</td></tr>
+      <tr><td>Representar el ciclo de vida de procesos</td><td>Implementación de 7 estados (NEW, READY, RUNNING, BLOCKED, SUSPENDED_READY, SUSPENDED_BLOCKED, TERMINATED) y transiciones controladas por <code>StateManager</code>.</td></tr>
+      <tr><td>Implementar planificación de CPU</td><td>FCFS activo en la operación actual, con interfaz común <code>SchedulingAlgorithm</code> preparada para habilitar otras políticas.</td></tr>
+      <tr><td>Integrar gestión de memoria principal y virtual</td><td>Asignación first-fit, reserva del área del SO (0-19), traducción base+offset y validación de acceso por proceso con <code>VirtualMemoryManager</code>.</td></tr>
+      <tr><td>Simular interrupciones y E/S con latencia</td><td>INT 09H, INT 10H, INT 20H, INT 21H; dispositivos con latencias diferenciadas (teclado, pantalla, disco) y desbloqueo por finalización.</td></tr>
+      <tr><td>Construir una interfaz de observación del estado interno</td><td>UI JavaFX 1440x860 con colas, RAM/Disco, BCP activo, registros y bitácora de eventos en tiempo real.</td></tr>
+      <tr><td>Medir desempeño del sistema</td><td>Cálculo de utilización de CPU, throughput, tiempos promedio de espera/retorno/respuesta y estadísticas por proceso en <code>StatisticsManager</code>.</td></tr>
+      <tr><td>Validar robustez frente a errores</td><td>Manejo explícito de errores de parse y runtime (stack overflow/underflow, operandos inválidos, límites de instrucción, etc.) sin colapsar la simulación global.</td></tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <!-- ================================================================ -->
+  <h2 id="bibliografia">14. Bibliografía</h2>
+
+  <p>
+    Esta sección documenta las fuentes teóricas que sustentan las decisiones de arquitectura, planificación,
+    manejo de procesos, memoria y prácticas de ingeniería de software aplicadas en el simulador.
+  </p>
+  <p>Referencias teóricas empleadas para el diseño de los componentes de planificación, procesos, memoria y arquitectura:</p>
+  <ol>
+    <li>Silberschatz, A., Galvin, P. B., &amp; Gagne, G. (2018). <em>Operating System Concepts</em> (10th ed.). Wiley.</li>
+    <li>Tanenbaum, A. S., &amp; Bos, H. (2015). <em>Modern Operating Systems</em> (4th ed.). Pearson.</li>
+    <li>Stallings, W. (2018). <em>Operating Systems: Internals and Design Principles</em> (9th ed.). Pearson.</li>
+    <li>Gamma, E., Helm, R., Johnson, R., &amp; Vlissides, J. (1994). <em>Design Patterns: Elements of Reusable Object-Oriented Software</em>. Addison-Wesley.</li>
+    <li>Sommerville, I. (2015). <em>Software Engineering</em> (10th ed.). Pearson.</li>
+    <li>Pressman, R. S., &amp; Maxim, B. R. (2019). <em>Software Engineering: A Practitioner's Approach</em> (9th ed.). McGraw-Hill.</li>
+  </ol>
+
+  <hr>
+  <p style="text-align:center; color: var(--text-muted); font-size: 0.85rem; margin-top: 24px;">
+    Simulador de Gestión de Procesos Mini PC &mdash; Java 25 + JavaFX 24 &mdash; 14 paquetes · 43 clases · FCFS activo
+  </p>
+
+</main>
+</body>
+</html>

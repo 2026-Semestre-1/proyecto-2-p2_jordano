@@ -1,0 +1,465 @@
+@startuml diagrama_flujo_excepciones
+skinparam dpi 220
+
+' ================================================================
+' SIMULADOR DE GESTIÓN DE PROCESOS — Mini PC
+' Diagrama de Flujo de Excepciones y Manejo de Errores
+' Cubre: errores de parser ASM, fallos de memoria,
+'        errores de ejecución en CPU, interrupciones
+'        especiales y casos límite de la UI
+' ================================================================
+
+skinparam backgroundColor #FAFAFA
+skinparam defaultTextAlignment left
+
+skinparam activity {
+    BackgroundColor #EEF2FF
+    BorderColor #3F51B5
+    FontColor #1A237E
+    FontSize 10
+    DiamondBackgroundColor #FFF9C4
+    DiamondBorderColor #F57F17
+    DiamondFontColor #4E342E
+    StartColor #1B5E20
+    EndColor #B71C1C
+    BarColor #37474F
+}
+
+skinparam partition {
+    BackgroundColor #F5F5FF
+    BorderColor #5C6BC0
+    FontColor #1A237E
+    FontStyle Bold
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontSize 9
+    FontColor #333333
+}
+
+skinparam arrow {
+    Color #5C6BC0
+    FontColor #283593
+    FontSize 9
+}
+
+title "Diagrama de Flujo de Excepciones y Errores\nSimulador de Gestión de Procesos — Mini PC"
+
+start
+
+' ================================================================
+' PUNTO DE ENTRADA: EL USUARIO INTERACTÚA CON EL SISTEMA
+' ================================================================
+:Usuario selecciona archivo(s) .asm\nSimuladorController.loadFiles();
+
+' ================================================================
+' PARTICIÓN 1: ERRORES EN TIEMPO DE ANÁLISIS (ASSEMBLER)
+' ================================================================
+partition "① Análisis del Archivo ASM\n(Assembler.parse)" #FFF3E0 {
+
+    if (¿El archivo existe en el sistema de archivos?) then (NO)
+        #FF8A80 :Lanza Exception:\n"File does not exist: <ruta>";
+        note right
+          Tipo: checked Exception
+          Capturada en: SimuladorController.loadFiles()
+          Efecto: archivo rechazado, PCB no creado
+          Otros archivos: continúan cargando
+        end note
+        #FF8A80 :Registra error:\n"[ERROR] archivo.asm: File does not exist";
+        #FF8A80 :Muestra mensaje en\nregistro de eventos de la UI;
+        stop
+    else (SÍ)
+    endif
+
+    if (¿El archivo contiene al menos\nuna instrucción válida?) then (NO — archivo vacío)
+        #FF8A80 :Lanza Exception:\n"El archivo está vacío o no contiene\ninstrucciones válidas.";
+        note right
+          Verificación post-lectura
+          en Assembler.parse()
+        end note
+        #FF8A80 :Muestra error en UI;
+        stop
+    else (SÍ)
+    endif
+
+    :Procesa cada línea del archivo;
+
+    if (¿El opcode de la línea es reconocido?) then (NO — opcode desconocido)
+        #FF5252 :Lanza Exception:\n"[Línea N] Instrucción desconocida: 'HALTT'";
+        note right
+          Caso default en Assembler.parseLine()
+          Archivo de prueba: test_err_badasm.asm
+          (línea 11: opcode HALTT)
+        end note
+        #FF5252 :Archivo completo rechazado;
+        #FF5252 :Muestra error:\n"[ERROR] archivo.asm: [Línea N] descripción";
+        stop
+    else (SÍ)
+    endif
+
+    if (¿Los operandos son válidos en\nnúmero y tipo?) then (NO — operandos inválidos)
+        #FF5252 :Lanza Exception:\n"[Línea N] Se esperaban N operandos\npara OPCODE, se encontraron M.";
+        note right
+          Lanzada en: Assembler.splitOperands()
+          Archivo de prueba: test_err_badoperands.asm
+        end note
+        #FF5252 :Archivo completo rechazado;
+        stop
+    else (SÍ)
+    endif
+
+    if (¿El operando que debe ser registro\nes un nombre de registro válido?) then (NO — registro inválido)
+        #FF5252 :Lanza Exception:\n"[Línea N] Registro inválido 'EAX'.\nVálidos: AC AX BX CX DX AH AL";
+        note right
+          Lanzada en: Assembler.requireRegister()
+        end note
+        #FF5252 :Archivo completo rechazado;
+        stop
+    else (SÍ)
+    endif
+
+    if (¿El código de interrupción INT es\nuno de los cuatro válidos?) then (NO — código INT desconocido)
+        #FF5252 :Lanza Exception:\n"[Línea N] Código de interrupción desconocido 'XXH'.\nVálidos: 20H, 10H, 09H, 21H.";
+        #FF5252 :Archivo completo rechazado;
+        stop
+    else (SÍ)
+    endif
+
+    if (¿Se asigna literal de cadena\na un registro que no es DX?) then (SÍ — registro incorrecto para cadena)
+        #FF5252 :Lanza Exception:\n"[Línea N] Los literales de cadena\nsolo pueden asignarse al registro DX.";
+        #FF5252 :Archivo completo rechazado;
+        stop
+    else (NO)
+    endif
+
+    if (¿El número total de instrucciones\nexcede maxInstructions?) then (SÍ — demasiadas instrucciones)
+        #FF5252 :Lanza Exception:\n"El programa excede el límite de N instrucciones\nconfigurado en assembler-config.json.";
+        note right
+          CONFIG.maxInstructions (defecto 80; 0 = sin límite)
+          Verificación post-lectura
+        end note
+        #FF5252 :Archivo completo rechazado;
+        stop
+    else (NO)
+    endif
+
+    #A5D6A7 :Archivo ASM válido;
+    #A5D6A7 :Retorna List<Instruction>;
+    #A5D6A7 :SimuladorController crea PCB\ncon instrucciones + metadatos;
+
+}
+
+' ================================================================
+' PARTICIÓN 2: ERRORES DE MEMORIA (MemoryManager)
+' ================================================================
+partition "② Admisión a Memoria\n(ProcessManager + MemoryManager)" #E8F5E9 {
+
+    :ProcessManager.loadArrivingProcesses(tick)\nIntenta admitir PCB de newQueue;
+
+    if (¿RAM configurada con tamaño\nmayor a OS_RESERVED=20?) then (NO — error de configuración)
+        #FF5252 :Constructor RAM(size) lanza:\nIllegalArgumentException:\n"RAM size must be greater than OS_RESERVED (20)";
+        note right
+          Error fatal al arrancar la JVM.
+          La aplicación no inicia.
+        end note
+        #FF5252 :La aplicación NO arranca;
+        stop
+    else (SÍ)
+    endif
+
+    if (¿Hay bloque libre en RAM contiguo\nde tamaño >= pcb.memoryRequired?) then (NO — RAM insuficiente)
+        #FFD54F :MemoryManager.allocate() retorna false\n(sin excepción);
+        note right
+          Sin mensaje de error.
+          El proceso permanece en cola NEW.
+          Se reintenta en el siguiente tick
+          cuando otro proceso libere memoria.
+        end note
+        #FFD54F :Proceso permanece en cola NEW\n(tabla NEW de la UI);
+        #FFD54F :Recuperación automática:\ncuando otro proceso termina\ny libera su bloque de RAM;
+        -[#FF8F00]-> [reintento en siguiente tick];
+    else (SÍ — RAM disponible)
+        #A5D6A7 :Asigna bloque (first-fit);
+        #A5D6A7 :pcb.memoryBase y pcb.memoryLimit asignados;
+        #A5D6A7 :NEW → READY (StateManager.admitToReady);
+    endif
+
+}
+
+' ================================================================
+' PARTICIÓN 3: ERRORES EN TIEMPO DE EJECUCIÓN (CPU)
+' ================================================================
+partition "③ Ejecución en CPU\n(CPU.applyInstruction)" #FFF3E0 {
+
+    :CPU.executeCycle()\nApplica instrucción actual del proceso;
+
+    if (¿PC está dentro del\nrango de instrucciones?) then (NO — PC fuera de rango)
+        #FFD54F :CPU retorna CycleEvent.processFinished()\n(tratado como finalización natural);
+        note right
+          PC < 0 || PC >= instrucciones.size()
+          No se genera evento de error.
+          El proceso termina normalmente.
+        end note
+        #A5D6A7 :Proceso finaliza limpiamente;
+        -[#388E3C]-> [Partición 5: Finalización];
+    else (SÍ)
+    endif
+
+    fork
+
+        ' --- Rama: PUSH / PARAM con pila llena ---
+        partition "Desbordamiento de Pila (PUSH/PARAM)" #FFEBEE {
+            if (¿Instrucción PUSH o PARAM\ncon stackPointer >= 4?) then (SÍ — pila llena)
+                #FF1744 :RegisterSet.push() lanza:\nStackOverflowError:\n"Stack overflow – stack is full (size=5)";
+                note right
+                  stackPointer = 4 → pila llena
+                  6to PUSH → StackOverflowError
+                  Archivo de prueba: test_err_stack.asm
+                end note
+                #FF1744 :CPU captura excepción;
+                #FF1744 :Retorna CycleEvent.error(\n"Stack overflow en PUSH en línea N");
+                -[#D50000]-> [Partición 4: Manejo de ERROR];
+            else (NO)
+            endif
+        }
+
+    fork again
+
+        ' --- Rama: POP con pila vacía ---
+        partition "Subdesbordamiento de Pila (POP)" #FFEBEE {
+            if (¿Instrucción POP\ncon stackPointer < 0?) then (SÍ — pila vacía)
+                #FF1744 :RegisterSet.pop() lanza:\nRuntimeException:\n"Stack underflow – stack is empty";
+                note right
+                  Archivo de prueba: test_err_stackoverflow.asm
+                end note
+                #FF1744 :CPU captura excepción;
+                #FF1744 :Retorna CycleEvent.error(\n"Stack underflow en POP en línea N");
+                -[#D50000]-> [Partición 4: Manejo de ERROR];
+            else (NO)
+            endif
+        }
+
+    fork again
+
+        ' --- Rama: Tipo de instrucción no manejado ---
+        partition "Instrucción No Manejada" #FFF9C4 {
+            if (¿InstructionType cae en\ncaso default del switch?) then (SÍ — bug interno)
+                #FF6D00 :CPU retorna CycleEvent.error(\n"Tipo de instrucción no manejado: <tipo>");
+                note right
+                  No debería ocurrir en operación normal.
+                  Indica una nueva instrucción
+                  no implementada en CPU.applyInstruction().
+                end note
+                -[#D50000]-> [Partición 4: Manejo de ERROR];
+            else (NO)
+            endif
+        }
+
+    end fork
+
+    #A5D6A7 :Instrucción ejecutada correctamente;
+    :CPU retorna CycleEvent según tipo\n(NORMAL, SCREEN_OUTPUT, KEYBOARD_INPUT,\nFILE_OPERATION, PROCESS_FINISHED);
+
+}
+
+' ================================================================
+' PARTICIÓN 4: MANEJO CENTRAL DE ERRORES (Kernel)
+' ================================================================
+partition "④ Manejo Central de Errores\n(Kernel.handleCycleEvent — caso ERROR)" #FFCDD2 {
+
+    #FF1744 :**Kernel recibe CycleEvent(ERROR)**;
+    #FF1744 :cpu.releaseProcess()\n(CPU queda ociosa);
+    #FF1744 :fireExecutionError(process, errorMessage)\n→ KernelEventListener.onExecutionError();
+    #FF1744 :SimuladorController actualiza UI:\n"[ERROR] PID N 'nombre': <mensaje>"\nRegistro de eventos en rojo;
+    #FF1744 :statisticsManager.onProcessFinished(process, tick)\nRegistra métricas parciales hasta el error;
+    #FF1744 :stateManager.terminate(process)\nEstado → TERMINATED;
+    #FF1744 :queueManager.moveToTerminated(process)\nProceso aparece en tabla TERMINADOS;
+    #FF1744 :memoryManager.free(process)\nBLOQUE DE RAM LIBERADO\nOtros procesos pueden ocupar ese espacio;
+
+    note right
+      La terminación por error es
+      irreversible. El proceso
+      aparece en TERMINATED con
+      métricas parciales.
+    end note
+
+}
+
+' ================================================================
+' PARTICIÓN 5: FINALIZACIÓN NORMAL DEL PROCESO
+' ================================================================
+partition "⑤ Finalización Normal\n(INT 20H o PC >= límite)" #E8F5E9 {
+
+    #A5D6A7 :**Kernel recibe CycleEvent(PROCESS_FINISHED)**;
+    #A5D6A7 :cpu.releaseProcess();
+    #A5D6A7 :statisticsManager.onProcessFinished(process, tick)\nCalcula: turnaroundTime, serviceTime,\nturnaroundRatio, waitingTime;
+    #A5D6A7 :stateManager.terminate(process) → TERMINATED;
+    #A5D6A7 :memoryManager.free(process) — Libera RAM;
+    #A5D6A7 :fireProcessStateChanged(process, RUNNING, TERMINATED);
+    #A5D6A7 :SimuladorController: "[FIN] PID N 'nombre' terminó en tick T";
+
+}
+
+' ================================================================
+' PARTICIÓN 6: INTERRUPCIONES ESPECIALES
+' ================================================================
+partition "⑥ Interrupciones Especiales\n(Escenarios sin error pero con manejo especial)" #E3F2FD {
+
+    split
+
+        ' --- Rama A: INT 09H ---
+        partition "INT 09H — Bloqueo por Teclado" #E8EAF6 {
+            #5C6BC0 :**CycleEvent.keyboardInput()**\nKernel establece waitingForKeyboard = proceso;
+            #5C6BC0 :ioManager.submitKeyboardRequest(proceso)\nDuración = Integer.MAX_VALUE\n(NUNCA completa automáticamente);
+            #5C6BC0 :stateManager.blockOnIO() → BLOCKED;
+            #5C6BC0 :cpu.releaseProcess();
+            #5C6BC0 :fireKeyboardInputRequired()\n→ UI muestra campo de entrada;
+            if (¿El usuario provee\nentrada de teclado?) then (SÍ — en algún momento)
+                #A5D6A7 :provideKeyboardInput(valor)\nIOManager.completeKeyboardRequest()\nax = valor;
+                #A5D6A7 :unblockToReady(proceso)\n→ READY;
+                #A5D6A7 :waitingForKeyboard = null\nSimulación se reanuda;
+            else (NO — indefinidamente)
+                #FF8A80 :Simulación completamente pausada.\nTodos los executeTick() son no-ops\nmientras waitingForKeyboard != null;
+                note right
+                  RIESGO: Si el usuario nunca
+                  envía entrada, la simulación
+                  queda suspendida sin error.
+                end note
+            endif
+        }
+
+    split again
+
+        ' --- Rama B: Expiración de Quantum ---
+        partition "Expiración de Quantum (Round Robin)" #E8F5E9 {
+            #66BB6A :**quantumRemaining <= 0** al final del tick\n(solo si política == ROUND_ROBIN);
+            #66BB6A :interruptManager.raise(QUANTUM_EXPIRED)\ncpu.releaseProcess()\nstateManager.preemptToReady();
+            #66BB6A :proceso.quantumRemaining = roundRobinQuantum\n(reinicia para siguiente turno);
+            #66BB6A :"[SCHED] Quantum expirado para 'nombre'"\n→ Proceso vuelve a cola READY;
+        }
+
+    split again
+
+        ' --- Rama C: INT 21H con operación fallida ---
+        partition "INT 21H — Operación de Archivo Fallida" #FFF9C4 {
+            #FFA726 :**CycleEvent.fileOperation(subcode, filename)**;
+            :Kernel ejecuta operación en Disk inmediatamente\n(createFile, openFile, writeFile, readFile, deleteFile);
+            if (¿Operación de Disk retorna false/null\n(duplicado, no existe, disco lleno)?) then (SÍ — falla silenciosa)
+                #FFD54F :La operación es un NO-OP silencioso;
+                note right
+                  No se genera CycleEvent.error().
+                  El proceso se bloquea de todas formas
+                  por 5 ticks y luego se desbloquea.
+                  Es una limitación conocida del sistema.
+                end note
+            else (NO — éxito)
+                #A5D6A7 :Disco actualizado correctamente;
+            endif
+            #FFA726 :ioManager.submitFileRequest()\nlatencia = 5 ticks;
+            #FFA726 :stateManager.blockOnIO() → BLOCKED;
+            #FFA726 :"[I/O] PID N → CREAR|LEER|... 'filename'";
+            note right
+              5 ticks después:
+              ioManager.tick() desbloquea el proceso
+              → unblockToReady() → READY
+            end note
+        }
+
+    end split
+
+}
+
+' ================================================================
+' PARTICIÓN 7: ERRORES DE TRANSICIÓN DE ESTADO
+' ================================================================
+partition "⑦ Errores de Transición de Estado\n(StateManager)" #FFECB3 {
+
+    if (¿StateManager.admitToReady() invocado\ncon PCB que NO está en estado NEW?) then (SÍ — transición inválida)
+        #FF6D00 :guardTransition() lanza:\nIllegalStateException:\n"Proceso <pid> debe estar en estado NEW\npero está en <estado_actual>";
+        note right
+          Error de programación interno.
+          No debería ocurrir en operación normal.
+          Solo admitToReady() usa guardTransition().
+        end note
+    else (NO)
+    endif
+
+    if (¿ProcessManager.submit() invocado\ncon PCB que NO está en NEW?) then (SÍ — estado incorrecto)
+        #FF6D00 :submit() lanza:\nIllegalArgumentException:\n"Solo se pueden enviar procesos\nen estado NEW. PID=<pid>";
+    else (NO)
+    endif
+
+}
+
+' ================================================================
+' PARTICIÓN 8: ERRORES DE CONFIGURACIÓN
+' ================================================================
+partition "⑧ Errores de Configuración\n(MemoryConfig + Constructores)" #F3E5F5 {
+
+    if (¿memory-config.json ausente\no malformado?) then (SÍ — fallo silencioso)
+        #CE93D8 :MemoryConfig.load() usa valores por defecto:\nRAM = 512 celdas\nVMem = 64 palabras/proceso\nDisco = 512 celdas;
+        note right
+          Manejo silencioso sin excepción.
+          La simulación arranca normalmente
+          con hardware de menor capacidad.
+        end note
+    else (NO — config cargada)
+        #A5D6A7 :Usa valores del archivo JSON:\nramSize, virtualMemorySize, diskSize;
+    endif
+
+    if (¿Disco configurado con tamaño\n<= INDEX_SIZE=10?) then (SÍ — error fatal)
+        #FF5252 :Constructor Disk(size) lanza:\nIllegalArgumentException:\n"Disk size must be > 10";
+        #FF5252 :La aplicación NO arranca;
+        stop
+    else (NO)
+    endif
+
+}
+
+' ================================================================
+' PARTICIÓN 9: CASOS LÍMITE DE LA INTERFAZ GRÁFICA
+' ================================================================
+partition "⑨ Casos Límite de la Interfaz Gráfica\n(Kernel + SimuladorController)" #E8EAF6 {
+
+    split
+
+        partition "Ejecución tras Halt" #F1F8E9 {
+            if (¿executeTick() llamado\ncuando halted == true?) then (SÍ)
+                #90CAF9 :Guarda de entrada: if (!booted || halted) return\nNo-op silencioso;
+                #90CAF9 :Usuario debe hacer clic en ↺ Reiniciar\no cargar nuevos archivos;
+            else (NO)
+            endif
+        }
+
+    split again
+
+        partition "Tick durante Espera de Teclado" #F1F8E9 {
+            if (¿executeTick() llamado\ncuando waitingForKeyboard != null?) then (SÍ)
+                #90CAF9 :Guarda: if (waitingForKeyboard != null) return\nTimeline dispara pero no hace nada;
+            else (NO)
+            endif
+        }
+
+    split again
+
+        partition "Reinicio durante Ejecución Automática" #F1F8E9 {
+            if (¿Usuario hace clic en ↺ Reiniciar\nmientras autoTimeline activo?) then (SÍ)
+                #90CAF9 :reset() → stopAuto() primero\n→ luego reinicio completo del Kernel\nSin condición de carrera;
+            else (NO)
+            endif
+        }
+
+    end split
+
+}
+
+' ================================================================
+' ESTADO FINAL DEL SISTEMA
+' ================================================================
+#A5D6A7 :Sistema en estado estable\nProcesos finalizados (normal o por error)\nEstadísticas disponibles;
+
+stop
+
+@enduml

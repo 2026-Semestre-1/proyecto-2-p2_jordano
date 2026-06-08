@@ -1,0 +1,921 @@
+@startuml diagrama_clases_completo
+skinparam dpi 220
+
+' ================================================================
+' SIMULADOR DE GESTIÓN DE PROCESOS — Mini PC
+' Diagrama de Clases Completo
+' Incluye: atributos, métodos, herencia, composición,
+'          asociaciones y dependencias entre todos los paquetes
+' ================================================================
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle Bold
+skinparam classHeaderBackgroundColor #E8EAF6
+skinparam classBackgroundColor #FAFAFA
+skinparam classBorderColor #3F51B5
+skinparam classArrowColor #5C6BC0
+skinparam classFontColor #1A237E
+skinparam classAttributeFontColor #212121
+skinparam classStereotypeFontColor #5C6BC0
+
+skinparam package {
+    BackgroundColor #F5F5FF
+    BorderColor #7986CB
+    FontColor #1A237E
+    FontStyle Bold
+    FontSize 11
+}
+
+skinparam interface {
+    BackgroundColor #E8F5E9
+    BorderColor #43A047
+    FontColor #1B5E20
+}
+
+skinparam enum {
+    BackgroundColor #FFF9C4
+    BorderColor #F9A825
+    FontColor #4E342E
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #FBC02D
+    FontSize 9
+}
+
+skinparam arrow {
+    FontSize 9
+    FontColor #37474F
+}
+
+left to right direction
+
+title "Diagrama de Clases Completo\nSimulador de Gestión de Procesos — Mini PC"
+
+' ================================================================
+' PAQUETE RAÍZ
+' ================================================================
+package "simuladorminipc" #FFFDE7 {
+
+    class MainFrame {
+        +{static} main(args : String[]) : void
+    }
+}
+
+' ================================================================
+' PAQUETE FX — PRESENTACIÓN
+' ================================================================
+package "simuladorminipc.fx" #E8EAF6 {
+
+    class SimuladorApp {
+        -controller : SimuladorController
+        -primaryStage : Stage
+        --
+        +start(stage : Stage) : void
+        +{static} main(args : String[]) : void
+        -buildToolbar() : Node
+        -buildCpuPanel() : Node
+        -buildQueueTables() : Node
+        -buildMemoryPanel() : Node
+        -buildEventLog() : Node
+        -buildStatsPanel() : Node
+    }
+
+    class SimuladorController {
+        -kernel : Kernel
+        -autoTimeline : Timeline
+        -newQueueRows : ObservableList<ProcessRow>
+        -readyQueueRows : ObservableList<ProcessRow>
+        -blockedQueueRows : ObservableList<ProcessRow>
+        -terminatedQueueRows : ObservableList<ProcessRow>
+        -memoryRows : ObservableList<MemoryRow>
+        -diskRows : ObservableList<DiskRow>
+        -eventLogItems : ObservableList<String>
+        -currentTickProp : LongProperty
+        -cpuStatusProp : StringProperty
+        -cpuProcessProp : StringProperty
+        -waitingForKeyboardProcess : PCB
+        --
+        +loadFiles() : void
+        +step() : void
+        +toggleAuto() : void
+        +startSingleProcess() : void
+        +reset() : void
+        +provideKeyboardInput(value : int) : void
+        +setPolicy(p : Policy) : void
+        +setQuantum(q : int) : void
+        -refreshUI() : void
+        +onTickCompleted(tick : long) : void
+        +onProcessStateChanged(p : PCB, prev : ProcessState, curr : ProcessState) : void
+        +onScreenOutput(p : PCB, text : String) : void
+        +onKeyboardInputRequired(p : PCB) : void
+        +onFileOperation(p : PCB, opName : String, filename : String) : void
+        +onExecutionError(p : PCB, msg : String) : void
+        +onAllFinished() : void
+    }
+
+    class ProcessRow {
+        +pid : int
+        +name : String
+        +state : String
+        +priority : int
+        +burst : long
+        +waiting : long
+        +pc : int
+        +cpuId : int
+    }
+
+    class MemoryRow {
+        +address : int
+        +value : String
+        +owner : String
+    }
+
+    class DiskRow {
+        +address : int
+        +zone : String
+        +value : String
+    }
+
+    SimuladorApp *-- SimuladorController : "«posee»"
+    SimuladorController *-- "0..*" ProcessRow : "modelo de cola"
+    SimuladorController *-- "0..*" MemoryRow : "modelo de RAM"
+    SimuladorController *-- "0..*" DiskRow : "modelo de disco"
+}
+
+' ================================================================
+' PAQUETE KERNEL
+' ================================================================
+package "simuladorminipc.kernel" #BBDEFB {
+
+    interface KernelEventListener <<interface>> {
+        +onTickCompleted(tick : long) : void
+        +onProcessStateChanged(p : PCB, prev : ProcessState, curr : ProcessState) : void
+        +onScreenOutput(p : PCB, text : String) : void
+        +onKeyboardInputRequired(p : PCB) : void
+        +onFileOperation(p : PCB, opName : String, filename : String) : void
+        +onExecutionError(p : PCB, msg : String) : void
+        +onAllFinished() : void
+    }
+
+    class Kernel {
+        -clock : SystemClock
+        -processManager : ProcessManager
+        -queueManager : QueueManager
+        -stateManager : StateManager
+        -scheduler : SchedulingPolicyManager
+        -dispatcher : Dispatcher
+        -cpu : CPU
+        -ioManager : IOManager
+        -interruptManager : InterruptManager
+        -memoryManager : MemoryManager
+        -vmm : VirtualMemoryManager
+        -swapManager : SwapManager
+        -disk : Disk
+        -statisticsManager : StatisticsManager
+        -listeners : List<KernelEventListener>
+        -booted : boolean
+        -halted : boolean
+        -waitingForKeyboard : PCB
+        --
+        +boot() : void
+        +executeTick() : void
+        +loadProcess(p : PCB) : void
+        +provideKeyboardInput(value : int) : void
+        +reset() : void
+        +addListener(l : KernelEventListener) : void
+        +setPolicy(p : Policy) : void
+        +setQuantum(q : int) : void
+        -scheduleAndDispatch(tick : long) : void
+        -handleCycleEvent(ev : CycleEvent, process : PCB, tick : long) : void
+        -handleQuantumExpiry(p : PCB, tick : long) : void
+        -allFinished() : boolean
+        -fireTickCompleted(tick : long) : void
+        -fireProcessStateChanged(p : PCB, prev : ProcessState, curr : ProcessState) : void
+        -fireScreenOutput(p : PCB, text : String) : void
+        -fireKeyboardInputRequired(p : PCB) : void
+        -fireFileOperation(p : PCB, op : String, file : String) : void
+        -fireExecutionError(p : PCB, msg : String) : void
+        -fireAllFinished() : void
+    }
+
+    Kernel --> "0..*" KernelEventListener : "«notifica»"
+}
+
+' ================================================================
+' PAQUETE ASSEMBLER
+' ================================================================
+package "simuladorminipc.assembler" #E8F5E9 {
+
+    class Assembler <<utility>> {
+        -{static} CONFIG : AssemblerConfig
+        -{static} REGISTER_PATTERN : Pattern
+        -{static} INT_PATTERN : Pattern
+        --
+        +{static} parse(file : File) : List<Instruction>
+        -{static} parseLine(line : String, lineNum : int) : Instruction
+        -{static} splitOperands(raw : String, expected : int, lineNum : int) : String[]
+        -{static} requireRegister(token : String, lineNum : int) : String
+        -{static} requireInt(token : String, lineNum : int) : int
+        -{static} parseAhValue(token : String, lineNum : int) : int
+    }
+
+    class Instruction {
+        -type : InstructionType
+        -operand1 : String
+        -operand2 : String
+        -stringLiteral : String
+        -original : String
+        -weight : int
+        -lineNumber : int
+        --
+        +getType() : InstructionType
+        +getOperand1() : String
+        +getOperand2() : String
+        +getStringLiteral() : String
+        +getOriginal() : String
+        +getWeight() : int
+        +getLineNumber() : int
+    }
+
+    enum InstructionType {
+        LOAD
+        STORE
+        MOV
+        ADD
+        SUB
+        INC
+        DEC
+        SWAP
+        INT_20H
+        INT_10H
+        INT_09H
+        INT_21H
+        JMP
+        CMP
+        JE
+        JNE
+        PARAM
+        PUSH
+        POP
+        --
+        -weight : int
+        +getWeight() : int
+    }
+
+    Assembler ..> Instruction : "«crea»"
+    Instruction --> InstructionType : "tipada por"
+}
+
+' ================================================================
+' PAQUETE CLOCK
+' ================================================================
+package "simuladorminipc.clock" #E0F7FA {
+
+    class SystemClock {
+        -currentTick : long
+        --
+        +tick() : long
+        +reset() : void
+        +getCurrentTick() : long
+    }
+}
+
+' ================================================================
+' PAQUETE CPU
+' ================================================================
+package "simuladorminipc.cpu" #FFF3E0 {
+
+    class CPU {
+        -id : int
+        -currentProcess : PCB
+        -cycleCountdown : int
+        -disk : Disk
+        -vmm : VirtualMemoryManager
+        --
+        +executeCycle() : CycleEvent
+        -applyInstruction(instr : Instruction) : CycleEvent
+        +loadProcess(p : PCB) : void
+        +releaseProcess() : void
+        +isIdle() : boolean
+        +getCurrentProcess() : PCB
+        +getId() : int
+    }
+
+    class CycleEvent {
+        -result : CycleResult
+        -screenText : String
+        -errorMessage : String
+        -fileSubcode : int
+        -filename : String
+        --
+        +{static} normal() : CycleEvent
+        +{static} idle() : CycleEvent
+        +{static} processFinished() : CycleEvent
+        +{static} keyboardInput() : CycleEvent
+        +{static} screenOutput(text : String) : CycleEvent
+        +{static} fileOperation(subcode : int, name : String) : CycleEvent
+        +{static} error(msg : String) : CycleEvent
+        +getResult() : CycleResult
+        +getScreenText() : String
+        +getErrorMessage() : String
+        +getFileSubcode() : int
+        +getFilename() : String
+    }
+
+    enum CycleResult {
+        NORMAL
+        PROCESS_FINISHED
+        SCREEN_OUTPUT
+        KEYBOARD_INPUT
+        FILE_OPERATION
+        IDLE
+        ERROR
+    }
+
+    class Dispatcher {
+        -contextSwitches : int
+        --
+        +dispatch(p : PCB, cpu : CPU) : void
+        +preempt(cpu : CPU) : void
+        +getContextSwitches() : int
+        +reset() : void
+    }
+
+    CPU --> CycleEvent : "«produce»"
+    CycleEvent --> CycleResult : "tipada por"
+    Dispatcher --> CPU : "«despacha en»"
+}
+
+' ================================================================
+' PAQUETE INTERRUPT
+' ================================================================
+package "simuladorminipc.interrupt" #FCE4EC {
+
+    class InterruptManager {
+        -queue : ArrayDeque<Interrupt>
+        --
+        +raise(type : InterruptType, source : PCB, payload : String, value : int) : void
+        +poll() : Interrupt
+        +peek() : Interrupt
+        +clear() : void
+        +snapshot() : List<Interrupt>
+        +isEmpty() : boolean
+    }
+
+    class Interrupt {
+        -type : InterruptType
+        -sourcePCB : PCB
+        -payload : String
+        -intValue : int
+        --
+        +getType() : InterruptType
+        +getSourcePCB() : PCB
+        +getPayload() : String
+        +getIntValue() : int
+    }
+
+    enum InterruptType {
+        PROCESS_FINISHED
+        QUANTUM_EXPIRED
+        IO_REQUEST
+        IO_FINISHED
+        PAGE_FAULT
+        KEYBOARD_INPUT
+        FILE_OPERATION
+        SCREEN_OUTPUT
+        RUNTIME_ERROR
+    }
+
+    InterruptManager *-- "0..*" Interrupt : "«encola»"
+    Interrupt --> InterruptType : "tipada por"
+}
+
+' ================================================================
+' PAQUETE IO
+' ================================================================
+package "simuladorminipc.io" #F3E5F5 {
+
+    class IOManager {
+        -keyboard : Device
+        -screen : Device
+        -disk : Device
+        -waitingProcesses : Map<Integer, PCB>
+        --
+        +submitKeyboardRequest(p : PCB) : void
+        +completeKeyboardRequest(p : PCB, value : int) : void
+        +submitFileRequest(p : PCB, subcode : int, filename : String) : void
+        +submitScreenRequest(p : PCB) : void
+        +tick() : List<PCB>
+        +isWaitingForKeyboard() : boolean
+        +removeProcess(p : PCB) : void
+        +reset() : void
+    }
+
+    class Device {
+        -name : String
+        -latency : int
+        -currentRequest : IORequest
+        -assignedPid : int
+        --
+        +assign(req : IORequest, pid : int) : void
+        +tick() : void
+        +checkComplete() : boolean
+        +isBusy() : boolean
+        +getAssignedPid() : int
+        +release() : void
+        +getName() : String
+    }
+
+    IOManager *-- "3" Device : "TECLADO(3)\nPANTALLA(1)\nDISCO(5)"
+}
+
+' ================================================================
+' PAQUETE MEMORY
+' ================================================================
+package "simuladorminipc.memory" #E0F2F1 {
+
+    class MemoryManager {
+        -ram : RAM
+        -blocks : List<MemoryBlock>
+        --
+        +allocate(p : PCB) : boolean
+        +free(p : PCB) : void
+        +freeWords() : int
+        +updateBcpOsArea(p : PCB) : void
+        +storeBcpInOsArea() : void
+        -findFreeBlock(size : int) : int
+        +getBlocks() : List<MemoryBlock>
+        +reset() : void
+    }
+
+    class RAM {
+        -{static} OS_RESERVED : int = 20
+        -size : int
+        -cells : String[]
+        --
+        +read(addr : int) : String
+        +write(addr : int, value : String) : void
+        +clearRange(start : int, end : int) : void
+        +userStart() : int
+        +userEnd() : int
+        +getSize() : int
+        +getCells() : String[]
+        +reset() : void
+        -checkBounds(addr : int) : void
+    }
+
+    class MemoryBlock {
+        -base : int
+        -size : int
+        -pid : int
+        -free : boolean
+        --
+        +getBase() : int
+        +getSize() : int
+        +getPid() : int
+        +isFree() : boolean
+        +setFree(free : boolean) : void
+        +setPid(pid : int) : void
+        +getLimit() : int
+    }
+
+    class MemoryConfig {
+        -ramSize : int
+        -virtualMemorySize : int
+        -diskSize : int
+        --
+        +{static} load() : MemoryConfig
+        +{static} defaults() : MemoryConfig
+        +getRamSize() : int
+        +getVirtualMemorySize() : int
+        +getDiskSize() : int
+    }
+
+    class VirtualMemoryManager {
+        --
+        +translate(p : PCB, virtualOffset : int) : int
+        +isValid(p : PCB, virtualOffset : int) : boolean
+    }
+
+    class SwapManager {
+        --
+        +swapOut(p : PCB, mm : MemoryManager) : boolean
+        +swapIn(mm : MemoryManager) : boolean
+    }
+
+    MemoryManager *-- RAM         : "«gestiona»"
+    MemoryManager *-- "1..*" MemoryBlock : "«administra bloques»"
+}
+
+' ================================================================
+' PAQUETE MODEL
+' ================================================================
+package "simuladorminipc.model" #FFF8E1 {
+
+    class PCB {
+        -{static} pidCounter : AtomicInteger
+        -pid : int
+        -name : String
+        -state : ProcessState
+        -arrivalTime : long
+        -burstTime : long
+        -remainingTime : long
+        -executedTime : long
+        -priority : int
+        -quantumRemaining : int
+        -waitingTime : long
+        -turnaroundTime : long
+        -responseTime : long
+        -serviceTime : long
+        -turnaroundRatio : double
+        -memoryRequired : int
+        -memoryBase : int
+        -memoryLimit : int
+        -registers : RegisterSet
+        -pendingIORequests : Queue<IORequest>
+        -currentIORequest : IORequest
+        -openFiles : Set<String>
+        -instructions : List<Instruction>
+        -cpuId : int
+        -startTime : long
+        -endTime : long
+        -wallStartMillis : long
+        -wallEndMillis : long
+        -started : boolean
+        -finished : boolean
+        -nextBCP : int
+        --
+        +{static} resetPidCounter() : void
+        +getCurrentInstruction() : Instruction
+        +hasMoreInstructions() : boolean
+        +getPid() : int
+        +getName() : String
+        +getState() : ProcessState
+        +setState(s : ProcessState) : void
+        +getRegisters() : RegisterSet
+    }
+
+    class RegisterSet {
+        +{static} STACK_SIZE : int = 5
+        +ac : int
+        +ax : int
+        +bx : int
+        +cx : int
+        +dx : int
+        +ir : int
+        +pc : int
+        +ah : int
+        +al : int
+        +dxString : String
+        +zeroFlag : boolean
+        -stack : int[]
+        -stackPointer : int
+        --
+        +push(value : int) : void
+        +pop() : int
+        +copy() : RegisterSet
+        +reset() : void
+    }
+
+    enum ProcessState {
+        NEW
+        READY
+        RUNNING
+        BLOCKED
+        SUSPENDED_READY
+        SUSPENDED_BLOCKED
+        TERMINATED
+        --
+        -displayName : String
+        +getDisplayName() : String
+    }
+
+    class IORequest {
+        -operation : Operation
+        -countdown : int
+        -complete : boolean
+        -filename : String
+        -data : String
+        --
+        +tick() : void
+        +isComplete() : boolean
+        +getOperation() : Operation
+        +getFilename() : String
+        +getData() : String
+    }
+
+    PCB *-- RegisterSet       : "«posee»"
+    PCB --> ProcessState      : "estado actual"
+    PCB *-- "0..*" IORequest  : "solicitudes E/S"
+}
+
+' ================================================================
+' PAQUETE PROCESS
+' ================================================================
+package "simuladorminipc.process" #F1F8E9 {
+
+    class ProcessManager {
+        -{static} MAX_CONCURRENT_PROCESSES : int = 5
+        -queueManager : QueueManager
+        -memoryManager : MemoryManager
+        -stateManager : StateManager
+        --
+        +submit(p : PCB) : void
+        +loadArrivingProcesses(tick : long) : void
+        +allFinished() : boolean
+    }
+
+    class QueueManager {
+        -newQueue : LinkedList<PCB>
+        -readyQueue : ArrayList<PCB>
+        -blockedQueue : ArrayList<PCB>
+        -suspendedQueue : ArrayList<PCB>
+        -terminatedQueue : ArrayList<PCB>
+        --
+        +admitToNew(p : PCB) : void
+        +moveToReady(p : PCB) : void
+        +moveToBlocked(p : PCB) : void
+        +moveToSuspended(p : PCB) : void
+        +moveToTerminated(p : PCB) : void
+        +removeFromAll(p : PCB) : void
+        +getAllLive() : List<PCB>
+        +getNewQueue() : List<PCB>
+        +getReadyQueue() : List<PCB>
+        +getBlockedQueue() : List<PCB>
+        +getTerminatedQueue() : List<PCB>
+    }
+
+    class StateManager {
+        -queueManager : QueueManager
+        --
+        +admitToReady(p : PCB) : void
+        +setRunning(p : PCB) : void
+        +preemptToReady(p : PCB) : void
+        +blockOnIO(p : PCB) : void
+        +unblockToReady(p : PCB) : void
+        +terminate(p : PCB) : void
+        -guardTransition(p : PCB, expected : ProcessState) : void
+    }
+
+    ProcessManager --> QueueManager   : "«usa»"
+    ProcessManager --> MemoryManager  : "«asigna RAM»"
+    ProcessManager --> StateManager   : "«transiciona»"
+    StateManager   --> QueueManager   : "«mueve procesos»"
+    QueueManager   --> "0..*" PCB     : "«contiene»"
+}
+
+' ================================================================
+' PAQUETE SCHEDULER
+' ================================================================
+package "simuladorminipc.scheduler" #FDE0DC {
+
+    interface SchedulingAlgorithm <<interface>> {
+        +selectNextProcess(readyQueue : List<PCB>, currentRunning : PCB) : PCB
+        +getName() : String
+    }
+
+    class SchedulingPolicyManager {
+        -activeAlgorithm : SchedulingAlgorithm
+        -currentPolicy : Policy
+        -roundRobinQuantum : int
+        --
+        +setPolicy(p : Policy) : void
+        +selectNext(queue : List<PCB>, current : PCB) : PCB
+        +setRoundRobinQuantum(q : int) : void
+        +getAlgorithmName() : String
+        +getCurrentPolicy() : Policy
+    }
+
+    enum Policy {
+        FCFS
+        ROUND_ROBIN
+        SPN
+        SRT
+        HRRN
+        PRIORITY
+    }
+
+    class FCFSScheduler {
+        --
+        +selectNextProcess(queue : List<PCB>, current : PCB) : PCB
+        +getName() : String
+    }
+
+    class RoundRobinScheduler {
+        -quantum : int
+        --
+        +RoundRobinScheduler(quantum : int)
+        +selectNextProcess(queue : List<PCB>, current : PCB) : PCB
+        +getName() : String
+    }
+
+    class SPNScheduler {
+        --
+        +selectNextProcess(queue : List<PCB>, current : PCB) : PCB
+        +getName() : String
+    }
+
+    class SRTScheduler {
+        --
+        +selectNextProcess(queue : List<PCB>, current : PCB) : PCB
+        +getName() : String
+    }
+
+    class HRRNScheduler {
+        --
+        +selectNextProcess(queue : List<PCB>, current : PCB) : PCB
+        +getName() : String
+    }
+
+    class PriorityScheduler {
+        --
+        +selectNextProcess(queue : List<PCB>, current : PCB) : PCB
+        +getName() : String
+    }
+
+    SchedulingPolicyManager --> SchedulingAlgorithm : "«delega en»"
+    SchedulingPolicyManager --> Policy              : "política activa"
+
+    FCFSScheduler    ..|> SchedulingAlgorithm : "«implementa»"
+    RoundRobinScheduler ..|> SchedulingAlgorithm : "«implementa»"
+    SPNScheduler     ..|> SchedulingAlgorithm : "«implementa»"
+    SRTScheduler     ..|> SchedulingAlgorithm : "«implementa»"
+    HRRNScheduler    ..|> SchedulingAlgorithm : "«implementa»"
+    PriorityScheduler ..|> SchedulingAlgorithm : "«implementa»"
+}
+
+' ================================================================
+' PAQUETE STATS
+' ================================================================
+package "simuladorminipc.stats" #F9FBE7 {
+
+    class StatisticsManager {
+        -totalTicks : long
+        -activeTicks : long
+        -finishedProcesses : List<ProcessStats>
+        -dispatcher : Dispatcher
+        --
+        +onTick(tick : long) : void
+        +onProcessFirstRun(p : PCB, tick : long) : void
+        +onProcessFinished(p : PCB, tick : long) : void
+        +getCpuUtilization() : double
+        +getThroughput() : double
+        +getAvgWaitingTime() : double
+        +getAvgTurnaroundTime() : double
+        +getAvgResponseTime() : double
+        +getContextSwitches() : int
+        +getFinishedProcesses() : List<ProcessStats>
+        +reset() : void
+    }
+
+    class ProcessStats {
+        -pid : int
+        -name : String
+        -priority : int
+        -startTime : long
+        -endTime : long
+        -burstTime : long
+        -waitingTime : long
+        -turnaroundTime : long
+        -responseTime : long
+        -serviceTime : long
+        -turnaroundRatio : double
+        -durationMillis : long
+        --
+        +getPid() : int
+        +getName() : String
+        +getBurstTime() : long
+        +getWaitingTime() : long
+        +getTurnaroundTime() : long
+        +getResponseTime() : long
+        +getTurnaroundRatio() : double
+    }
+
+    StatisticsManager *-- "0..*" ProcessStats : "«registra»"
+    StatisticsManager --> Dispatcher           : "«consulta\ncambios de contexto»"
+}
+
+' ================================================================
+' PAQUETE STORAGE
+' ================================================================
+package "simuladorminipc.storage" #EDE7F6 {
+
+    class Disk {
+        -{static} INDEX_SIZE : int = 10
+        -size : int
+        -storage : String[]
+        -directory : Map<String, DiskFile>
+        -nextDataAddress : int
+        --
+        +createFile(name : String) : boolean
+        +openFile(name : String) : boolean
+        +writeFile(name : String, data : String) : boolean
+        +readFile(name : String) : String
+        +deleteFile(name : String) : boolean
+        +storeProgram(name : String, instrs : List<Instruction>) : void
+        +getStorage() : String[]
+        +getDirectory() : Map<String, DiskFile>
+        +reset() : void
+    }
+
+    class DiskFile {
+        -name : String
+        -startAddress : int
+        -size : int
+        -content : String
+        --
+        +getName() : String
+        +getStartAddress() : int
+        +getSize() : int
+        +getContent() : String
+        +setContent(c : String) : void
+    }
+
+    Disk *-- "0..*" DiskFile : "«almacena»"
+}
+
+' ================================================================
+' RELACIONES INTER-PAQUETES
+' ================================================================
+
+' --- Arranque ---
+MainFrame ..> SimuladorApp : "«inicia»"
+
+' --- Capa FX ---
+SimuladorController ..|> KernelEventListener  : "«implementa»"
+SimuladorController *-- Kernel                : "«posee y controla»"
+SimuladorController ..> Assembler             : "«parsea archivos .asm»"
+
+' --- Kernel posee todos los subsistemas ---
+Kernel *-- SystemClock              : "reloj"
+Kernel *-- ProcessManager           : "gestión de procesos"
+Kernel *-- QueueManager             : "colas"
+Kernel *-- StateManager             : "transiciones"
+Kernel *-- SchedulingPolicyManager  : "planificador"
+Kernel *-- Dispatcher               : "despachador"
+Kernel *-- CPU                      : "CPU"
+Kernel *-- IOManager                : "E/S"
+Kernel *-- InterruptManager         : "interrupciones"
+Kernel *-- MemoryManager            : "memoria"
+Kernel *-- VirtualMemoryManager     : "mem. virtual"
+Kernel *-- SwapManager              : "swap"
+Kernel *-- Disk                     : "disco"
+Kernel *-- StatisticsManager        : "estadísticas"
+
+' --- CPU ---
+CPU --> Disk                   : "«INT 21H»"
+CPU --> VirtualMemoryManager   : "«valida accesos»"
+CPU ..> Instruction            : "«ejecuta»"
+CPU ..> RegisterSet            : "«modifica registros»"
+
+' --- Assembler produce instrucciones para PCB ---
+Assembler ..> PCB : "«pobla instrucciones»"
+
+' --- IOManager interactúa con PCB ---
+IOManager ..> PCB     : "«desbloquea»"
+IOManager --> Device  : "gestiona 3 dispositivos"
+Device    ..> IORequest : "«sirve solicitudes»"
+
+' --- Interrupt referencia PCB ---
+Interrupt ..> PCB : "proceso fuente"
+
+' --- Process usa PCB ---
+ProcessManager ..> PCB : "«admite y somete»"
+
+' --- Scheduler lee PCB ---
+SchedulingAlgorithm ..> PCB : "«consulta campos»"
+
+' ================================================================
+' NOTAS ACLARATORIAS
+' ================================================================
+
+note on link
+  Patrón Strategy:\n6 implementaciones\nintercambiables
+end note
+
+note bottom of PCB
+  Estructura central del SO.
+  Contiene TODO el estado
+  de un proceso: registros,
+  instrucciones, métricas,
+  archivos, solicitudes E/S.
+end note
+
+note bottom of Kernel
+  Fachada principal del sistema.
+  Pipeline executeTick() de 10 etapas:
+  ① reloj ② admisión ③ E/S ④ planificación
+  ⑤ CPU ⑥ evento ⑦ quantum ⑧ stats
+  ⑨ notificación ⑩ fin
+end note
+
+note bottom of RegisterSet
+  STACK_SIZE = 5
+  push() lanza StackOverflowError
+  pop()  lanza RuntimeException
+  si la pila está vacía
+end note
+
+@enduml

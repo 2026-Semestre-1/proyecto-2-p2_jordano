@@ -1,0 +1,91 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\geometry{margin=2.2cm}
+
+\title{Documentacion Final --- Simulador de Gestion de Procesos Mini PC\\\large Version LaTeX con UML en imagenes}
+\author{Proyecto SimuladorMiniPC}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Descripcion del Proyecto}
+Version de exportacion LaTeX orientada a lectura tecnica, con los diagramas UML incorporados como imagenes PNG.
+
+\section{Inventario de Paquetes}
+La arquitectura se organiza en 14 paquetes, con el kernel como orquestador del ciclo de ejecucion y subsistemas especializados para CPU, memoria, E/S, interrupciones, almacenamiento y metricas.
+
+\section{Clases Clave --- UML en Imagenes}
+Esta version reemplaza las vistas en texto/markdown por figuras insertadas, de forma equivalente a un documento HTML con imagenes embebidas.
+
+\subsection{Diagrama UML de Clases}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{diagramas/diagrama_clases_completo.png}
+  \caption{Diagrama UML de clases del simulador (vista integral).}
+\end{figure}
+
+\subsection{Diagrama UML de Paquetes}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{diagramas/diagrama_paquetes.png}
+  \caption{Diagrama UML de paquetes y dependencias principales.}
+\end{figure}
+
+\subsection{Diagrama UML de Secuencia de Ejecucion}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{diagramas/diagrama_secuencia_ejecucion.png}
+  \caption{Secuencia de ejecucion por tick entre kernel, scheduler, CPU y gestores.}
+\end{figure}
+
+\subsection{Diagrama UML de Flujo de Excepciones}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\textwidth]{diagramas/diagrama_flujo_excepciones.png}
+  \caption{Flujo UML de manejo de errores y excepciones de simulacion.}
+\end{figure}
+
+\section{Pipeline de Ejecucion}
+El pipeline mantiene diez etapas fijas por tick: reloj, admision, avance de E/S, planificacion, ejecucion, manejo de eventos, metricas, notificacion y cierre.
+
+\section{Gestion de Memoria}
+Modelo first-fit sobre RAM fisica y traduccion base+offset para direccionamiento virtual.
+
+\section{Interrupciones y E/S}
+Soporte para INT 20H, INT 10H, INT 09H e INT 21H con latencias por dispositivo.
+
+\section{Manejo de Errores}
+Se mantienen rutas de parse y runtime con contencion del fallo por proceso.
+
+\section{Metricas de Rendimiento}
+Utilizacion de CPU, throughput, tiempos promedio y ratio de retorno.
+
+\section{Conjunto de Instrucciones ASM}
+Conjunto de instrucciones con peso de CPU y semantica operacional.
+
+\section{Estados del Proceso}
+Transiciones NEW, READY, RUNNING, BLOCKED y TERMINATED con reglas de negocio del estado.
+
+\section{Manual de Usuario}
+Operacion guiada de la interfaz, lectura de paneles y resolucion de incidencias comunes.
+
+\section{Manual Tecnico}
+Arquitectura, configuracion externa y lineamientos de mantenimiento.
+
+\section{Objetivos Alcanzados}
+Cumplimiento de objetivos academicos de modelado de SO, planificacion, memoria, E/S y metricas.
+
+\section{Bibliografia}
+Referencias de sistemas operativos, patrones y calidad de software.
+
+\end{document}
