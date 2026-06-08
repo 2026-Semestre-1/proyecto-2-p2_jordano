@@ -16,11 +16,12 @@ package simuladorminipc.memory;
  */
 public class RAM {
 
-    /** Number of cells reserved for OS structures (BCPs). */
-    public static final int BCP_AREA_SIZE  = 20;
+    /** Number of cells reserved for OS structures (BCPs).
+     *  Layout: 16 cells per process × 5 processes max = 80 cells. */
+    public static final int BCP_AREA_SIZE  = 80;
 
-    /** Base address of the file index within the OS area. */
-    public static final int FILE_INDEX_BASE = 20;
+    /** Base address of the file index within the OS area (immediately after BCP area). */
+    public static final int FILE_INDEX_BASE = BCP_AREA_SIZE;
 
     /** Number of cells in the file index (one entry per loaded file). */
     public static final int FILE_INDEX_SIZE = 10;

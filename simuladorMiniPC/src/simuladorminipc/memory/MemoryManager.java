@@ -112,22 +112,35 @@ public class MemoryManager {
 
     // ── BCP in OS area (addresses 0–19) ──────────────────────────────────────
     //
-    // Layout: 4 cells per process, up to 5 processes = 20 cells exactly.
-    //   Slot 0 → cells  0– 3
-    //   Slot 1 → cells  4– 7
-    //   Slot 2 → cells  8–11
-    //   Slot 3 → cells 12–15
-    //   Slot 4 → cells 16–19
+    // Layout: 16 cells per process, up to 5 processes = 80 cells exactly.
+    //   Slot 0 → cells  0–15
+    //   Slot 1 → cells 16–31
+    //   Slot 2 → cells 32–47
+    //   Slot 3 → cells 48–63
+    //   Slot 4 → cells 64–79
     //
-    // Cells 20–29 are used for the file index (see RAM.FILE_INDEX_BASE).
+    // Cells 80–89 are used for the file index (see RAM.FILE_INDEX_BASE).
     //
-    //   cell+0: BCP PID=x NOM=name PRIO=p
-    //   cell+1: BASE=n LIM=m BURST=b REM=r
-    //   cell+2: WAIT=w TURN=t SERV=s T/S=r.rr
-    //   cell+3: PC=n IR=n AC=n AX=n EST=state
+    // One datum per cell (distributed layout):
+    //   cell+0:  PID=x
+    //   cell+1:  PC=n
+    //   cell+2:  IR=n
+    //   cell+3:  AC=n
+    //   cell+4:  AX=n
+    //   cell+5:  NOM=name
+    //   cell+6:  PRIO=p
+    //   cell+7:  EST=state
+    //   cell+8:  BASE=n
+    //   cell+9:  LIM=n
+    //   cell+10: BURST=n
+    //   cell+11: REM=n
+    //   cell+12: WAIT=n
+    //   cell+13: TURN=n
+    //   cell+14: SERV=n
+    //   cell+15: T/S=r.rr
 
-    private static final int BCP_CELLS_PER_PROC = 4;
-    /** Maximum number of BCP slots in the OS area (fixed at 5, cells 0–19). */
+    private static final int BCP_CELLS_PER_PROC = 16;
+    /** Maximum number of BCP slots in the OS area (fixed at 5, cells 0–79). */
     private static final int BCP_MAX_SLOTS      = RAM.BCP_AREA_SIZE / BCP_CELLS_PER_PROC;
 
     private void storeBcpInOsArea(PCB process, int base) {
@@ -143,26 +156,26 @@ public class MemoryManager {
     }
 
     private void writeBcpSlot(int slot, PCB process) {
-        int base  = slot * BCP_CELLS_PER_PROC;
+        int base = slot * BCP_CELLS_PER_PROC;
         simuladorminipc.model.RegisterSet r = process.getRegisters();
         String ratioStr = process.getServiceTime() > 0
             ? String.format("%.2f", process.getTurnaroundRatio()) : "—";
-        ram.write(base,     "BCP PID=" + process.getPid()
-                          + " NOM=" + process.getName()
-                          + " PRIO=" + process.getPriority());
-        ram.write(base + 1, "BASE=" + process.getMemoryBase()
-                          + " LIM=" + process.getMemoryLimit()
-                          + " BURST=" + process.getBurstTime()
-                          + " REM=" + process.getRemainingTime());
-        ram.write(base + 2, "WAIT=" + process.getWaitingTime()
-                          + " TURN=" + process.getTurnaroundTime()
-                          + " SERV=" + process.getServiceTime()
-                          + " T/S=" + ratioStr);
-        ram.write(base + 3, "PC=" + r.getPc()
-                          + " IR=" + r.getIr()
-                          + " AC=" + r.getAc()
-                          + " AX=" + r.getAx()
-                          + " EST=" + process.getState().getDisplayName());
+        ram.write(base,      "PID=" + process.getPid());
+        ram.write(base +  1, "PC=" + r.getPc());
+        ram.write(base +  2, "IR=" + r.getIr());
+        ram.write(base +  3, "AC=" + r.getAc());
+        ram.write(base +  4, "AX=" + r.getAx());
+        ram.write(base +  5, "NOM=" + process.getName());
+        ram.write(base +  6, "PRIO=" + process.getPriority());
+        ram.write(base +  7, "EST=" + process.getState().getDisplayName());
+        ram.write(base +  8, "BASE=" + process.getMemoryBase());
+        ram.write(base +  9, "LIM=" + process.getMemoryLimit());
+        ram.write(base + 10, "BURST=" + process.getBurstTime());
+        ram.write(base + 11, "REM=" + process.getRemainingTime());
+        ram.write(base + 12, "WAIT=" + process.getWaitingTime());
+        ram.write(base + 13, "TURN=" + process.getTurnaroundTime());
+        ram.write(base + 14, "SERV=" + process.getServiceTime());
+        ram.write(base + 15, "T/S=" + ratioStr);
     }
 
     private void clearBcpFromOsArea(PCB process) {
@@ -183,10 +196,10 @@ public class MemoryManager {
     }
 
     private int findOsSlotForPid(int pid) {
-        String prefix = "BCP PID=" + pid + " ";
+        String target = "PID=" + pid;
         for (int s = 0; s < BCP_MAX_SLOTS; s++) {
             String cell = ram.read(s * BCP_CELLS_PER_PROC);
-            if (cell != null && cell.startsWith(prefix)) return s;
+            if (target.equals(cell)) return s;
         }
         return -1;
     }
