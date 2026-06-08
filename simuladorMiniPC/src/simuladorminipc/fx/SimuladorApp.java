@@ -760,8 +760,8 @@ public class SimuladorApp extends Application {
         TableColumn<MemoryRow,String>  cZone = col("Zona",  "zone");
         TableColumn<MemoryRow,String>  cVal  = col("Valor", "value");
 
-        cAddr.setMaxWidth(50);
-        cZone.setMaxWidth(45);
+        cAddr.setMinWidth(42);  cAddr.setPrefWidth(46);  cAddr.setMaxWidth(55);
+        cZone.setMinWidth(38);  cZone.setPrefWidth(42);  cZone.setMaxWidth(52);
 
         tbl.getColumns().addAll(cAddr, cZone, cVal);
 
@@ -771,13 +771,13 @@ public class SimuladorApp extends Application {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setStyle(""); return; }
                 if ("OS".equals(item.getZone())) {
-                    setStyle("-fx-background-color:#1a1a3e;");
+                    setStyle("-fx-background-color:#1a1a3e; -fx-text-fill:#c7d2fe;");
                 } else if ("IDX".equals(item.getZone())) {
-                    setStyle("-fx-background-color:#1a2e1a;");
+                    setStyle("-fx-background-color:#1a2e1a; -fx-text-fill:#86efac;");
                 } else if ("—".equals(item.getZone())) {
-                    setStyle("-fx-background-color:#0f0f1e;");
+                    setStyle("-fx-background-color:#0f0f1e; -fx-text-fill:#475569;");
                 } else {
-                    setStyle("-fx-background-color:" + processColour(item.getZone()) + ";");
+                    setStyle("-fx-background-color:" + processColour(item.getZone()) + "; -fx-text-fill:#f8fafc;");
                 }
             }
         });
