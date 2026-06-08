@@ -867,8 +867,8 @@ public class SimuladorApp extends Application {
         TableColumn<DiskRow,String>  cZone = col("Archivo",   "zone");
         TableColumn<DiskRow,String>  cVal  = col("Contenido", "value");
 
-        cAddr.setMaxWidth(50);
-        cZone.setMaxWidth(80);
+        cAddr.setMinWidth(42);  cAddr.setPrefWidth(46);  cAddr.setMaxWidth(55);
+        cZone.setMinWidth(50);  cZone.setPrefWidth(60);  cZone.setMaxWidth(90);
 
         tbl.getColumns().addAll(cAddr, cZone, cVal);
 
@@ -878,9 +878,9 @@ public class SimuladorApp extends Application {
                 super.updateItem(item, empty);
                 if (empty || item == null) { setStyle(""); return; }
                 switch (item.getZone()) {
-                    case "IDX"   -> setStyle("-fx-background-color:#1a1a3e;");
-                    case "LIBRE" -> setStyle("-fx-background-color:#0f0f1e;");
-                    default      -> setStyle("-fx-background-color:" + processColour(item.getZone()) + ";");
+                    case "IDX"   -> setStyle("-fx-background-color:#1a1a3e; -fx-text-fill:#c7d2fe;");
+                    case "LIBRE" -> setStyle("-fx-background-color:#0f0f1e; -fx-text-fill:#475569;");
+                    default      -> setStyle("-fx-background-color:" + processColour(item.getZone()) + "; -fx-text-fill:#f8fafc;");
                 }
             }
         });
