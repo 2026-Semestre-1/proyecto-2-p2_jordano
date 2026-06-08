@@ -547,14 +547,16 @@ public class SimuladorController implements KernelEventListener {
         }
     }
 
-    /** Rebuilds the memory-row observable list from the current RAM state. */
+    /** Rebuilds the memory-row observable list from the current RAM state.
+     *  Display order: IDX entries first, then BCP/OS area, then user space. */
     void refreshMemory() {
         memoryRows.clear();
         String[] cells = kernel.getRam().getCells();
-        int osReserved  = RAM.OS_RESERVED;
+        int osReserved     = RAM.OS_RESERVED;
+        int fileIndexBase  = RAM.FILE_INDEX_BASE;
 
-        // Find the highest occupied address (either OS area or user area with content)
-        int maxOccupied = osReserved - 1; // OS area is always shown
+        // Find the highest occupied address in user space
+        int maxOccupied = osReserved - 1;
         for (int i = cells.length - 1; i >= osReserved; i--) {
             if (cells[i] != null && !cells[i].isEmpty()) {
                 maxOccupied = i;
@@ -562,18 +564,22 @@ public class SimuladorController implements KernelEventListener {
             }
         }
 
-        for (int i = 0; i <= maxOccupied; i++) {
+        // 1. IDX area first (FILE_INDEX_BASE … OS_RESERVED-1)
+        for (int i = fileIndexBase; i < osReserved; i++) {
             String val = (cells[i] == null || cells[i].isEmpty()) ? "—" : cells[i];
-            String zone;
-            if (i < RAM.FILE_INDEX_BASE) {
-                zone = "OS";
-            } else if (i < osReserved) {
-                zone = "IDX";
-            } else {
-                // Determine which process occupies this address
-                zone = ownerLabel(i);
-            }
-            memoryRows.add(new MemoryRow(i, zone, val));
+            memoryRows.add(new MemoryRow(i, "IDX", val));
+        }
+
+        // 2. BCP/OS area (0 … FILE_INDEX_BASE-1)
+        for (int i = 0; i < fileIndexBase; i++) {
+            String val = (cells[i] == null || cells[i].isEmpty()) ? "—" : cells[i];
+            memoryRows.add(new MemoryRow(i, "OS", val));
+        }
+
+        // 3. User space (OS_RESERVED … maxOccupied)
+        for (int i = osReserved; i <= maxOccupied; i++) {
+            String val = (cells[i] == null || cells[i].isEmpty()) ? "—" : cells[i];
+            memoryRows.add(new MemoryRow(i, ownerLabel(i), val));
         }
     }
 
